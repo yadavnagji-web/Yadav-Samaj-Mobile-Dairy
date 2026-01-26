@@ -1,8 +1,7 @@
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "firebase/app";
 import { 
-  initializeFirestore, 
-  persistentLocalCache, 
+  getFirestore,
   collection, 
   onSnapshot, 
   addDoc, 
@@ -10,14 +9,11 @@ import {
   doc, 
   deleteDoc, 
   query, 
-  orderBy, 
-  setDoc 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  setDoc,
+  initializeFirestore,
+  persistentLocalCache
+} from "firebase/firestore";
 
-/**
- * BHIM Mobile Dairy - Firebase Configuration
- * User Project: bhim-dairy
- */
 const firebaseConfig = {
   apiKey: "AIzaSyBkJ2cREq0L10oWQ5nlksl29CbMzPaEBIs",
   authDomain: "bhim-dairy.firebaseapp.com",
@@ -28,14 +24,9 @@ const firebaseConfig = {
   measurementId: "G-1CNCT3LH9W"
 };
 
-// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-/**
- * Enhanced Firestore Initialization:
- * 1. persistentLocalCache: Enables offline data access.
- * 2. experimentalForceLongPolling: Fixes 'Could not reach backend' by using HTTP instead of WebSockets.
- */
+// Using explicit initialization to ensure cross-browser stability and local caching
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
   experimentalForceLongPolling: true
@@ -44,31 +35,35 @@ const db = initializeFirestore(app, {
 export { db };
 
 /**
- * Real-time synchronization helper with detailed Error Handling
+ * Real-time synchronization helper.
+ * Data is cleaned to ensure no circular references or complex Firestore objects enter the state.
  */
 export const syncCollection = (collName: string, callback: (data: any[]) => void, onError?: (error: any) => void) => {
-  if (!db) return () => {};
-  
   const collRef = collection(db, collName);
   const q = query(collRef);
   
   return onSnapshot(q, (snapshot) => {
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // We map only the plain data to avoid leaking DocumentReference objects into state
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Ensure we only have plain serializable data
+      return JSON.parse(JSON.stringify({ 
+        id: doc.id, 
+        ...data 
+      }));
+    });
     callback(items);
   }, (error: any) => {
-    // Determine the type of error for better UI feedback
-    const isPermissionError = error.code === 'permission-denied' || (error.message && error.message.toLowerCase().includes('permission'));
-    const isNetworkError = error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('reach cloud firestore'));
+    // CRITICAL: We do NOT spread the original error object to avoid Circular Structure errors.
+    // Instead, we extract only the string/primitive values we need.
+    const isPermissionError = error.code === 'permission-denied';
+    const isNetworkError = error.code === 'unavailable';
     
-    console.error(`[Firebase Sync Error] Collection: ${collName}`, {
-      code: error.code,
-      message: error.message,
-      isPermissionError,
-      isNetworkError
-    });
+    console.error(`[Firebase Sync Error] ${collName}:`, error.message);
     
     if (onError) onError({ 
-      ...error, 
+      message: error.message || "Unknown error", 
+      code: error.code || "unknown",
       isPermissionError, 
       isNetworkError,
       collection: collName 
@@ -76,9 +71,6 @@ export const syncCollection = (collName: string, callback: (data: any[]) => void
   });
 };
 
-/**
- * Firestore Add Record
- */
 export const addToCloud = async (collName: string, data: any) => {
   try {
     return await addDoc(collection(db, collName), {
@@ -91,9 +83,6 @@ export const addToCloud = async (collName: string, data: any) => {
   }
 };
 
-/**
- * Firestore Update Record
- */
 export const updateInCloud = async (collName: string, id: string, data: any) => {
   try {
     const docRef = doc(db, collName, id);
@@ -104,9 +93,6 @@ export const updateInCloud = async (collName: string, id: string, data: any) => 
   }
 };
 
-/**
- * Firestore Delete Record (Hard Delete)
- */
 export const deleteFromCloud = async (collName: string, id: string) => {
   try {
     const docRef = doc(db, collName, id);
@@ -117,9 +103,6 @@ export const deleteFromCloud = async (collName: string, id: string) => {
   }
 };
 
-/**
- * Save Global Settings
- */
 export const saveSettingsToCloud = async (settings: any) => {
   try {
     await setDoc(doc(db, "app_settings", "global"), settings);

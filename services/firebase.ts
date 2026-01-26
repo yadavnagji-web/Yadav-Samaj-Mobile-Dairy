@@ -25,7 +25,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Using explicit initialization to ensure cross-browser stability and local caching
+// Using explicit initialization for stability and caching
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
 });
@@ -34,29 +34,28 @@ export { db };
 
 /**
  * Real-time synchronization helper.
- * We use deep cloning to ensure NO Firebase internal objects (like DocumentReference) 
- * enter the React state, which prevents the "Circular Structure" error.
+ * Deep cleaning ensures NO non-serializable Firestore objects trigger 
+ * circular reference errors in React state.
  */
 export const syncCollection = (collName: string, callback: (data: any[]) => void, onError?: (error: any) => void) => {
   const collRef = collection(db, collName);
   const q = query(collRef);
   
   return onSnapshot(q, (snapshot) => {
-    // We strictly map and then stringify/parse to clean the data
-    const items = snapshot.docs.map(doc => {
-      const rawData = doc.data();
-      return { 
-        id: doc.id, 
-        ...rawData 
-      };
-    });
+    // Map data first
+    const rawItems = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     
-    // Deep clone to remove non-serializable properties before sending to React state
+    // Deep clone to remove non-serializable properties (like DocumentReference)
     try {
-      const cleanData = JSON.parse(JSON.stringify(items));
-      callback(cleanData);
+      const sanitizedData = JSON.parse(JSON.stringify(rawItems));
+      callback(sanitizedData);
     } catch (e) {
-      console.error("Data sanitization error:", e);
+      console.error(`Error sanitizing ${collName}:`, e);
+      // Fallback if sanitization fails
+      callback([]);
     }
   }, (error: any) => {
     console.error(`[Firebase Error] ${collName}:`, error.code, error.message);
@@ -105,7 +104,6 @@ export const deleteFromCloud = async (collName: string, id: string) => {
 
 export const saveSettingsToCloud = async (settings: any) => {
   try {
-    // Ensure settings are clean of non-serializable data before saving
     const cleanSettings = JSON.parse(JSON.stringify(settings));
     await setDoc(doc(db, "app_settings", "global"), cleanSettings);
   } catch (error) {

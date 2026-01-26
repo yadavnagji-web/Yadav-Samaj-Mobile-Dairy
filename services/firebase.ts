@@ -42,19 +42,24 @@ export const syncCollection = (collName: string, callback: (data: any[]) => void
   const q = query(collRef);
   
   return onSnapshot(q, (snapshot) => {
+    // We strictly map and then stringify/parse to clean the data
     const items = snapshot.docs.map(doc => {
-      const data = doc.data();
-      // This deep clone removes all Firestore-specific hidden methods and properties
-      return JSON.parse(JSON.stringify({ 
+      const rawData = doc.data();
+      return { 
         id: doc.id, 
-        ...data 
-      }));
+        ...rawData 
+      };
     });
-    callback(items);
+    
+    // Deep clone to remove non-serializable properties before sending to React state
+    try {
+      const cleanData = JSON.parse(JSON.stringify(items));
+      callback(cleanData);
+    } catch (e) {
+      console.error("Data sanitization error:", e);
+    }
   }, (error: any) => {
     console.error(`[Firebase Error] ${collName}:`, error.code, error.message);
-    
-    // Do NOT pass the full error object to avoid circular references
     if (onError) onError({ 
       message: error.message || "Unknown error", 
       code: error.code || "unknown",
@@ -66,8 +71,9 @@ export const syncCollection = (collName: string, callback: (data: any[]) => void
 
 export const addToCloud = async (collName: string, data: any) => {
   try {
+    const cleanData = JSON.parse(JSON.stringify(data));
     return await addDoc(collection(db, collName), {
-      ...data,
+      ...cleanData,
       createdAt: new Date().toISOString()
     });
   } catch (error) {
@@ -78,8 +84,9 @@ export const addToCloud = async (collName: string, data: any) => {
 
 export const updateInCloud = async (collName: string, id: string, data: any) => {
   try {
+    const cleanData = JSON.parse(JSON.stringify(data));
     const docRef = doc(db, collName, id);
-    return await updateDoc(docRef, data);
+    return await updateDoc(docRef, cleanData);
   } catch (error) {
     console.error("Error updating document: ", error);
     throw error;

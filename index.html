@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BHIM Mobile Dairy</title>
-    <meta name="description" content="डिजिटल ग्राम निर्देशिका एवं सामाजिक डायरी">
+    <title>यादव समाज वागड़ चौरासी मोबाइल डायरी</title>
+    <meta name="description" content="यादव समाज वागड़ चौरासी की डिजिटल ग्राम निर्देशिका एवं सामाजिक डायरी">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="https://w7.pngwing.com/pngs/454/339/png-transparent-b-r-ambedkar-dalit-logo-dalit-s-blue-face-logo-thumbnail.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +14,7 @@
       body {
         font-family: 'Noto Sans Devanagari', sans-serif;
         -webkit-tap-highlight-color: transparent;
+        background-color: #f8fafc;
       }
       .animate-fade-in {
         animation: fadeIn 0.5s ease-out forwards;
@@ -20,6 +22,20 @@
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
+      }
+      /* Custom Scrollbar for a premium look */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
       }
     </style>
 <script type="importmap">
@@ -30,7 +46,6 @@
     "react/": "https://esm.sh/react@^19.2.3/",
     "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
-    "xlsx": "https://esm.sh/xlsx@^0.18.5",
     "firebase/": "https://esm.sh/firebase@^12.8.0/",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
@@ -40,7 +55,6 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-    <!-- Vite is the bundler. It handles imports from package.json automatically. -->
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 {
-  "name": "BHIM Mobile Dairy",
-  "description": "A powerful Hindi-based Village Social Mobile Diary and Web Directory with AI voice search, dynamic field management, and automatic PDF diary generation.",
+  "name": "यादव समाज वागड़ चौरासी मोबाइल डायरी",
+  "description": "यादव समाज वागड़ चौरासी की डिजिटल ग्राम निर्देशिका एवं सामाजिक डायरी",
   "requestFramePermissions": [
     "microphone"
   ]

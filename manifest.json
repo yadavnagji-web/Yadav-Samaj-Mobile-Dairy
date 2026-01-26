@@ -1,7 +1,7 @@
 
 {
-  "name": "BHIM Mobile Dairy",
-  "short_name": "भीम डेयरी",
+  "name": "यादव समाज वागड़ चौरासी मोबाइल डायरी",
+  "short_name": "यादव डायरी",
   "description": "डिजिटल ग्राम निर्देशिका एवं सामाजिक डायरी",
   "start_url": "/",
   "display": "standalone",
@@ -9,12 +9,12 @@
   "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=BHIM_DAIRY",
+      "src": "https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=YAADAV_DAIRY",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=BHIM_DAIRY",
+      "src": "https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=YAADAV_DAIRY",
       "sizes": "512x512",
       "type": "image/png"
     }

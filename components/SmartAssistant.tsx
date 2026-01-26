@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { parseSmartIntent } from '../services/geminiService';
+import { parseSmartIntent, speakText } from '../services/geminiService';
 
 interface SmartAssistantProps {
   onAction: (action: any) => void;
@@ -28,21 +29,27 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({ onAction }) => {
         const result = await parseSmartIntent(text);
         if (result) {
           if (result.intent === 'FORBIDDEN') {
-            setFeedback("क्षमा करें, मुझे डेटा डिलीट या एडिट करने की अनुमति नहीं है।");
+            const msg = "क्षमा करें, मुझे डेटा डिलीट या एडिट करने की अनुमति नहीं है।";
+            setFeedback(msg);
+            speakText(msg);
           } else if (result.intent === 'DISABLED') {
             setFeedback(result.message);
           } else {
             setFeedback(result.message);
+            // AI Speaks the action it is taking
+            speakText(result.message);
             onAction(result);
           }
         } else {
-          setFeedback("माफ़ कीजिये, मैं समझ नहीं पाया। कृपया फिर से कहें।");
+          const failMsg = "माफ़ कीजिये, मैं समझ नहीं पाया। कृपया फिर से कहें।";
+          setFeedback(failMsg);
+          speakText(failMsg);
         }
         
         setTimeout(() => {
           setIsProcessing(false);
           setFeedback('');
-        }, 3000);
+        }, 4000);
       };
 
       recognitionRef.current.onerror = () => {
@@ -56,7 +63,6 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({ onAction }) => {
   const startListening = () => {
     if (isProcessing) return;
     
-    // Check if API Key exists (via a simple check if possible or let the service handle it)
     if (!process.env.API_KEY) {
        setFeedback("AI सुविधा के लिए API Key आवश्यक है।");
        setTimeout(() => setFeedback(''), 3000);
@@ -71,7 +77,14 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({ onAction }) => {
   return (
     <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end pointer-events-none">
       {feedback && (
-        <div className="mb-4 bg-white px-4 py-2 rounded-2xl shadow-xl border border-blue-100 text-sm font-bold text-blue-800 animate-fade-in pointer-events-auto max-w-[200px] text-center">
+        <div className="mb-4 bg-white px-5 py-3 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-blue-50 text-sm font-black text-indigo-800 animate-fade-in pointer-events-auto max-w-[220px] text-center leading-relaxed">
+          <div className="flex items-center justify-center mb-1">
+             <span className="flex h-2 w-2 mr-2">
+                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+             </span>
+             {isProcessing ? 'प्रोसेसिंग...' : 'BHIM AI'}
+          </div>
           {feedback}
         </div>
       )}
@@ -80,7 +93,7 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({ onAction }) => {
         onClick={startListening}
         className={`w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(37,99,235,0.4)] transition-all transform active:scale-90 pointer-events-auto ${
           isListening ? 'bg-red-500 animate-pulse' : 
-          isProcessing ? 'bg-amber-500' : 'bg-blue-600'
+          isProcessing ? 'bg-amber-500' : 'bg-indigo-600'
         }`}
       >
         {isProcessing ? (
@@ -100,7 +113,7 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({ onAction }) => {
           </div>
         )}
       </button>
-      <p className="mt-2 text-[10px] font-black text-blue-900 bg-white/80 px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">AI सहायक</p>
+      <p className="mt-2 text-[10px] font-black text-indigo-900 bg-white/90 px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">BHIM AI सहायक</p>
 
       <style>{`
         @keyframes fade-in {

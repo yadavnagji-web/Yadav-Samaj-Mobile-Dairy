@@ -30,6 +30,7 @@ export interface Contact {
   villageId: string;
   familyId?: string;
   name: string;
+  fatherName: string; // New Core Field
   mobile: string;
   profession: string;
   dynamicValues: Record<string, any>;
@@ -65,6 +66,7 @@ export interface AppSettings {
   senderMobile: string;
   templateId: string;
   messageId: string;
+  phoneNumberId?: string; // For WhatsApp Route
   otpMessage: string;
   diaryYear: string;
   pageSize: 'A4' | 'A5';

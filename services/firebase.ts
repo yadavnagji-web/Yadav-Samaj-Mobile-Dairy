@@ -1,21 +1,20 @@
+
 import { initializeApp } from "firebase/app";
 import { 
-  getFirestore,
-  collection, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  deleteDoc, 
-  query, 
-  setDoc,
-  initializeFirestore,
-  persistentLocalCache
-} from "firebase/firestore";
+  getDatabase, 
+  ref, 
+  onValue, 
+  push, 
+  set, 
+  update, 
+  remove,
+  child
+} from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBkJ2cREq0L10oWQ5nlksl29CbMzPaEBIs",
   authDomain: "bhim-dairy.firebaseapp.com",
+  databaseURL: "https://bhim-dairy-default-rtdb.firebaseio.com",
   projectId: "bhim-dairy",
   storageBucket: "bhim-dairy.firebasestorage.app",
   messagingSenderId: "164452978911",
@@ -23,90 +22,95 @@ const firebaseConfig = {
   measurementId: "G-1CNCT3LH9W"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Using explicit initialization for stability and robust local caching
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache(),
-});
+const db = getDatabase(app);
 
 export { db };
 
 /**
- * Real-time synchronization helper.
- * Strictly cleans data using JSON stringify/parse to prevent circular references
- * which are the common cause of "Blank Screen" errors in React apps using Firestore.
+ * Real-time synchronization helper for RTD.
  */
-export const syncCollection = (collName: string, callback: (data: any[]) => void, onError?: (error: any) => void) => {
-  const collRef = collection(db, collName);
-  const q = query(collRef);
+export const syncCollection = (path: string, callback: (data: any[]) => void, onError?: (error: any) => void) => {
+  const dbRef = ref(db, path);
   
-  return onSnapshot(q, (snapshot) => {
-    // 1. First map the raw data
-    const rawItems = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    
-    // 2. Hard check: Convert to JSON and back to remove non-serializable properties (like DocumentReference)
-    try {
-      const sanitizedData = JSON.parse(JSON.stringify(rawItems));
-      callback(sanitizedData);
-    } catch (e) {
-      console.error(`[Sanitization Failed] ${collName}:`, e);
-      callback([]); // Safe fallback to avoid UI crash
+  return onValue(dbRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      // RTD returns an object of objects, convert to array with IDs
+      const list = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+      }));
+      callback(list);
+    } else {
+      callback([]);
     }
-  }, (error: any) => {
-    console.error(`[Firebase Sync Error] ${collName}:`, error.code, error.message);
-    if (onError) onError({ 
-      message: error.message || "Unknown error", 
-      code: error.code || "unknown",
-      isPermissionError: error.code === 'permission-denied', 
-      isNetworkError: error.code === 'unavailable'
+  }, (error) => {
+    console.error(`[RTD Sync Failed] ${path}:`, error);
+    if (onError) onError({
+      message: error.message,
+      isNetworkError: true
     });
   });
 };
 
-export const addToCloud = async (collName: string, data: any) => {
+/**
+ * Adds a record to a path.
+ */
+export const addToCloud = async (path: string, data: any) => {
   try {
+    const dbRef = ref(db, path);
+    const newRef = push(dbRef);
     const cleanData = JSON.parse(JSON.stringify(data));
-    return await addDoc(collection(db, collName), {
+    await set(newRef, {
       ...cleanData,
       createdAt: new Date().toISOString()
     });
+    return { id: newRef.key };
   } catch (error) {
-    console.error("Error adding document: ", error);
+    console.error("Error adding to RTD:", error);
     throw error;
   }
 };
 
-export const updateInCloud = async (collName: string, id: string, data: any) => {
+/**
+ * Updates a specific record in a path.
+ */
+export const updateInCloud = async (path: string, id: string, data: any) => {
   try {
+    const dbRef = ref(db, `${path}/${id}`);
     const cleanData = JSON.parse(JSON.stringify(data));
-    const docRef = doc(db, collName, id);
-    return await updateDoc(docRef, cleanData);
+    await update(dbRef, cleanData);
   } catch (error) {
-    console.error("Error updating document: ", error);
+    console.error("Error updating RTD:", error);
     throw error;
   }
 };
 
-export const deleteFromCloud = async (collName: string, id: string) => {
+/**
+ * Deletes a record from a path.
+ */
+export const deleteFromCloud = async (path: string, id: string) => {
   try {
-    const docRef = doc(db, collName, id);
-    return await deleteDoc(docRef);
+    const dbRef = ref(db, `${path}/${id}`);
+    await remove(dbRef);
   } catch (error) {
-    console.error("Error deleting document: ", error);
+    console.error("Error deleting from RTD:", error);
     throw error;
   }
 };
 
+/**
+ * Specifically saves app settings.
+ */
 export const saveSettingsToCloud = async (settings: any) => {
   try {
+    const dbRef = ref(db, "app_settings/global");
     const cleanSettings = JSON.parse(JSON.stringify(settings));
-    await setDoc(doc(db, "app_settings", "global"), cleanSettings);
+    await set(dbRef, cleanSettings);
   } catch (error) {
-    console.error("Error saving settings: ", error);
+    console.error("Error saving settings to RTD:", error);
     throw error;
   }
 };

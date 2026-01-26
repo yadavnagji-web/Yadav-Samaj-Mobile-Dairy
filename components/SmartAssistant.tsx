@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { parseSmartIntent } from '../services/geminiService';
 
@@ -30,6 +29,8 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({ onAction }) => {
         if (result) {
           if (result.intent === 'FORBIDDEN') {
             setFeedback("क्षमा करें, मुझे डेटा डिलीट या एडिट करने की अनुमति नहीं है।");
+          } else if (result.intent === 'DISABLED') {
+            setFeedback(result.message);
           } else {
             setFeedback(result.message);
             onAction(result);
@@ -54,6 +55,14 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({ onAction }) => {
 
   const startListening = () => {
     if (isProcessing) return;
+    
+    // Check if API Key exists (via a simple check if possible or let the service handle it)
+    if (!process.env.API_KEY) {
+       setFeedback("AI सुविधा के लिए API Key आवश्यक है।");
+       setTimeout(() => setFeedback(''), 3000);
+       return;
+    }
+
     setFeedback("बोलिए, मैं सुन रहा हूँ...");
     setIsListening(true);
     recognitionRef.current?.start();

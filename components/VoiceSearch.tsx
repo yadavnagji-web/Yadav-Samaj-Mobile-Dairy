@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { parseVoiceQuery } from '../services/geminiService';
 
@@ -24,8 +23,14 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ onResult }) => {
         setTranscript(text);
         setIsListening(false);
         
-        const parsed = await parseVoiceQuery(text);
-        onResult(parsed, text);
+        // Only try AI parsing if Key exists
+        if (process.env.API_KEY) {
+          const parsed = await parseVoiceQuery(text);
+          onResult(parsed, text);
+        } else {
+          // Fallback to text directly
+          onResult(null, text);
+        }
       };
 
       recognitionRef.current.onerror = (event: any) => {

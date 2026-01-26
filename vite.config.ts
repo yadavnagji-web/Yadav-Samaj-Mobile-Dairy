@@ -4,11 +4,12 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Ensuring process.env is handled safely for browser usage
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+    // Stringify handles both empty and valid keys for the build step
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
   },
   build: {
     outDir: 'dist',
+    assetsDir: 'assets',
     sourcemap: false,
     chunkSizeWarningLimit: 2000,
     rollupOptions: {

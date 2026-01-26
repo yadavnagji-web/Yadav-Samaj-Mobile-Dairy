@@ -1,12 +1,26 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// API Key check to make it optional
+const API_KEY = process.env.API_KEY;
+
+/**
+ * Helper to get Gemini Instance if API key is available
+ */
+function getAI() {
+  if (!API_KEY || API_KEY === "") {
+    console.warn("Gemini API Key missing. AI features will be disabled.");
+    return null;
+  }
+  return new GoogleGenAI({ apiKey: API_KEY });
+}
 
 /**
  * Parses smart intents for the overall assistant navigation and actions.
  */
 export async function parseSmartIntent(query: string) {
+  const ai = getAI();
+  if (!ai) return { intent: "DISABLED", message: "AI सुविधा फिलहाल उपलब्ध नहीं है (Missing API Key)।" };
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -41,7 +55,6 @@ export async function parseSmartIntent(query: string) {
       },
     });
 
-    // Extracting text output from response using .text property
     return JSON.parse(response.text || '{}');
   } catch (error) {
     console.error("Gemini Intent Parsing Error:", error);
@@ -51,9 +64,11 @@ export async function parseSmartIntent(query: string) {
 
 /**
  * Parses simple voice search queries for names, villages, or professions.
- * Added to fix the missing export error in components/VoiceSearch.tsx.
  */
 export async function parseVoiceQuery(query: string) {
+  const ai = getAI();
+  if (!ai) return null;
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -71,7 +86,6 @@ export async function parseVoiceQuery(query: string) {
       },
     });
 
-    // Extracting text output from response using .text property
     return JSON.parse(response.text || '{}');
   } catch (error) {
     console.error("Gemini Voice Query Error:", error);

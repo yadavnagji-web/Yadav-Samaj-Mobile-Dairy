@@ -1,4 +1,3 @@
-
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore,
@@ -29,24 +28,23 @@ const app = initializeApp(firebaseConfig);
 // Using explicit initialization to ensure cross-browser stability and local caching
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
-  experimentalForceLongPolling: true
 });
 
 export { db };
 
 /**
  * Real-time synchronization helper.
- * Data is cleaned to ensure no circular references or complex Firestore objects enter the state.
+ * We use deep cloning to ensure NO Firebase internal objects (like DocumentReference) 
+ * enter the React state, which prevents the "Circular Structure" error.
  */
 export const syncCollection = (collName: string, callback: (data: any[]) => void, onError?: (error: any) => void) => {
   const collRef = collection(db, collName);
   const q = query(collRef);
   
   return onSnapshot(q, (snapshot) => {
-    // We map only the plain data to avoid leaking DocumentReference objects into state
     const items = snapshot.docs.map(doc => {
       const data = doc.data();
-      // Ensure we only have plain serializable data
+      // This deep clone removes all Firestore-specific hidden methods and properties
       return JSON.parse(JSON.stringify({ 
         id: doc.id, 
         ...data 
@@ -54,19 +52,14 @@ export const syncCollection = (collName: string, callback: (data: any[]) => void
     });
     callback(items);
   }, (error: any) => {
-    // CRITICAL: We do NOT spread the original error object to avoid Circular Structure errors.
-    // Instead, we extract only the string/primitive values we need.
-    const isPermissionError = error.code === 'permission-denied';
-    const isNetworkError = error.code === 'unavailable';
+    console.error(`[Firebase Error] ${collName}:`, error.code, error.message);
     
-    console.error(`[Firebase Sync Error] ${collName}:`, error.message);
-    
+    // Do NOT pass the full error object to avoid circular references
     if (onError) onError({ 
       message: error.message || "Unknown error", 
       code: error.code || "unknown",
-      isPermissionError, 
-      isNetworkError,
-      collection: collName 
+      isPermissionError: error.code === 'permission-denied', 
+      isNetworkError: error.code === 'unavailable'
     });
   });
 };
@@ -105,7 +98,9 @@ export const deleteFromCloud = async (collName: string, id: string) => {
 
 export const saveSettingsToCloud = async (settings: any) => {
   try {
-    await setDoc(doc(db, "app_settings", "global"), settings);
+    // Ensure settings are clean of non-serializable data before saving
+    const cleanSettings = JSON.parse(JSON.stringify(settings));
+    await setDoc(doc(db, "app_settings", "global"), cleanSettings);
   } catch (error) {
     console.error("Error saving settings: ", error);
     throw error;

@@ -1,0 +1,7 @@
+{
+  "name": "BHIM Mobile Dairy",
+  "description": "A powerful Hindi-based Village Social Mobile Diary and Web Directory with AI voice search, dynamic field management, and automatic PDF diary generation.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

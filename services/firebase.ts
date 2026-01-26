@@ -25,7 +25,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Using explicit initialization for stability and caching
+// Using explicit initialization for stability and robust local caching
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
 });
@@ -34,31 +34,30 @@ export { db };
 
 /**
  * Real-time synchronization helper.
- * Deep cleaning ensures NO non-serializable Firestore objects trigger 
- * circular reference errors in React state.
+ * Strictly cleans data using JSON stringify/parse to prevent circular references
+ * which are the common cause of "Blank Screen" errors in React apps using Firestore.
  */
 export const syncCollection = (collName: string, callback: (data: any[]) => void, onError?: (error: any) => void) => {
   const collRef = collection(db, collName);
   const q = query(collRef);
   
   return onSnapshot(q, (snapshot) => {
-    // Map data first
+    // 1. First map the raw data
     const rawItems = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
     
-    // Deep clone to remove non-serializable properties (like DocumentReference)
+    // 2. Hard check: Convert to JSON and back to remove non-serializable properties (like DocumentReference)
     try {
       const sanitizedData = JSON.parse(JSON.stringify(rawItems));
       callback(sanitizedData);
     } catch (e) {
-      console.error(`Error sanitizing ${collName}:`, e);
-      // Fallback if sanitization fails
-      callback([]);
+      console.error(`[Sanitization Failed] ${collName}:`, e);
+      callback([]); // Safe fallback to avoid UI crash
     }
   }, (error: any) => {
-    console.error(`[Firebase Error] ${collName}:`, error.code, error.message);
+    console.error(`[Firebase Sync Error] ${collName}:`, error.code, error.message);
     if (onError) onError({ 
       message: error.message || "Unknown error", 
       code: error.code || "unknown",

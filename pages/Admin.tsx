@@ -30,12 +30,10 @@ const Admin: React.FC<AdminProps> = (props) => {
   const [uploadStatus, setUploadStatus] = useState('');
   const [imgUploadProgress, setImgUploadProgress] = useState<{ [key: string]: string }>({});
 
-  // Village Form State
+  // Form States
   const [vName, setVName] = useState('');
   const [vTehsil, setVTehsil] = useState('');
   const [vDistrict, setVDistrict] = useState('Dungarpur');
-
-  // Member Search State
   const [mSearch, setMSearch] = useState('');
 
   useEffect(() => {
@@ -64,6 +62,56 @@ const Admin: React.FC<AdminProps> = (props) => {
       alert("त्रुटि! डेटाबेस से संपर्क नहीं हो पाया।");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    setUploadStatus('0%');
+    try {
+      const rows = await parseContactsFromExcel(file);
+      if (!rows || rows.length === 0) {
+        alert("Excel फाइल खाली है।");
+        setLoading(false);
+        return;
+      }
+
+      let successCount = 0;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const percent = Math.round(((i + 1) / rows.length) * 100);
+        setUploadStatus(`${percent}%`);
+        
+        const villageName = row['गाँव'] || row['village'] || row['Village'] || row['सदस्य का गाँव'];
+        const name = row['नाम'] || row['name'] || row['Name'] || row['सदस्य का नाम'];
+        const mobile = row['मोबाइल'] || row['mobile'] || row['Mobile'] || row['मोबाइल नंबर'];
+        const father = row['पिता का नाम'] || row['father'] || row['Father Name'] || 'अज्ञात';
+        
+        const village = props.villages.find(v => v.name === String(villageName).trim());
+        
+        if (village && name && mobile) {
+           await addToCloud('contacts', {
+              name: String(name),
+              fatherName: String(father),
+              mobile: String(mobile).replace(/\D/g, '').slice(-10),
+              villageId: village.id,
+              isActive: true,
+              isDeleted: false,
+              dynamicValues: {}
+           });
+           successCount++;
+        }
+      }
+      alert(`${successCount} सदस्य सफलतापूर्वक इम्पोर्ट किए गए।`);
+    } catch (err) {
+      alert("Excel अपलोड में त्रुटि हुई।");
+    } finally {
+      setLoading(false);
+      setUploadStatus('');
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -101,8 +149,8 @@ const Admin: React.FC<AdminProps> = (props) => {
     <div className="flex flex-col md:flex-row min-h-screen bg-slate-50/30 p-2 md:p-4 gap-4">
       <aside className="w-full md:w-48 space-y-2 shrink-0 flex flex-col">
         <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-2">
-           <h1 className="text-xs font-heavy-custom text-slate-800 uppercase tracking-tighter">SAMAJ ADMIN</h1>
-           <p className="text-[7px] font-light-custom text-indigo-400 uppercase tracking-[0.2em] mt-1">v1.0.8 - Control</p>
+           <h1 className="text-xs font-heavy-custom text-slate-800 uppercase tracking-tighter leading-tight">यादव समाज<br/>वागड़ चौरासी</h1>
+           <p className="text-[7px] font-light-custom text-indigo-400 uppercase tracking-[0.2em] mt-1">v1.1.0 - CONTROL</p>
         </div>
         
         <nav className="space-y-1 flex-1">
@@ -133,11 +181,22 @@ const Admin: React.FC<AdminProps> = (props) => {
                  <StatsCard label="सदस्य" count={props.contacts.filter(c=>!c.isDeleted).length} icon="👥" color="purple" />
                  <StatsCard label="सक्रिय" count={props.contacts.filter(c=>!c.isDeleted && c.isActive).length} icon="✨" color="amber" />
               </div>
+              
               <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <h3 className="text-[9px] font-heavy-custom text-slate-800 mb-4 flex items-center space-x-2 uppercase tracking-widest">त्वरित कार्यवाही</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   <QuickAction title="प्रिंट PDF" sub="Full Sync" icon="🖨️" bg="bg-indigo-600" onClick={() => window.print()} />
                   <QuickAction title="Excel Backup" sub="Download" icon="📥" bg="bg-emerald-600" onClick={() => exportContactsToExcel(props.contacts, props.villages)} />
+                  <div className="relative">
+                    <input type="file" id="bulk-upload-input" className="hidden" accept=".xlsx, .xls" onChange={handleExcelImport} />
+                    <QuickAction 
+                      title={loading && uploadStatus ? uploadStatus : "Excel Import"} 
+                      sub={loading ? "अपलोड हो रहा है..." : "बल्क डेटा"} 
+                      icon={loading ? "⌛" : "📤"} 
+                      bg={loading ? "bg-amber-500" : "bg-slate-800"} 
+                      onClick={() => !loading && document.getElementById('bulk-upload-input')?.click()} 
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -154,7 +213,7 @@ const Admin: React.FC<AdminProps> = (props) => {
                     <option value="Dungarpur">डूंगरपुर</option>
                     <option value="Banswara">बांसवाड़ा</option>
                   </select>
-                  <button type="submit" disabled={loading} className="bg-indigo-600 text-white font-heavy-custom rounded-xl text-[9px] uppercase tracking-widest">गाँव जोड़ें +</button>
+                  <button type="submit" disabled={loading} className="bg-indigo-600 text-white font-heavy-custom rounded-xl text-[9px] uppercase tracking-widest p-3">गाँव जोड़ें +</button>
                 </form>
               </div>
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -200,7 +259,7 @@ const Admin: React.FC<AdminProps> = (props) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {props.contacts.filter(c=>!c.isDeleted && (c.name.includes(mSearch) || c.mobile.includes(mSearch))).slice(0, 50).map(c => (
+                    {props.contacts.filter(c=>!c.isDeleted && (c.name.toLowerCase().includes(mSearch.toLowerCase()) || c.mobile.includes(mSearch))).slice(0, 100).map(c => (
                       <tr key={c.id} className="text-xs font-bold text-slate-700">
                         <td className="px-6 py-4">{c.name}</td>
                         <td className="px-6 py-4">{c.fatherName}</td>
@@ -222,7 +281,7 @@ const Admin: React.FC<AdminProps> = (props) => {
               <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
                 <h3 className="text-[10px] font-heavy-custom text-slate-800 flex items-center space-x-2 uppercase tracking-widest">
                   <span className="bg-indigo-50 p-1 rounded-lg text-sm">🤖</span>
-                  <span>AI API Configurations (Firebase Stored)</span>
+                  <span>AI API Configurations (Saved to Firebase)</span>
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-1">
@@ -245,7 +304,7 @@ const Admin: React.FC<AdminProps> = (props) => {
                   id="admin-bg-upload" 
                   label="ऐप बैकग्राउंड इमेज" 
                   value={props.settings.backgroundImageUrl} 
-                  onUpload={(e) => {
+                  onUpload={(e: any) => {
                     const file = e.target.files?.[0];
                     if(file) uploadFileToStorage(file, 'branding', p=>setImgUploadProgress({bg: `${p}%`})).then(url=>props.setSettings({...props.settings, backgroundImageUrl: url}));
                   }} 
@@ -259,7 +318,7 @@ const Admin: React.FC<AdminProps> = (props) => {
                 disabled={loading}
                 className="w-full text-white font-heavy-custom py-5 rounded-xl shadow-lg transition-all text-[10px] uppercase tracking-[0.3em] bg-indigo-600 hover:bg-indigo-700"
               >
-                {loading ? 'सुरक्षित हो रहा है...' : 'सभी सेटिंग्स अपडेट करें 🚀'}
+                {loading ? 'सुरक्षित हो रहा है...' : 'Brand & API Settings सुरक्षित करें 🚀'}
               </button>
             </div>
           } />
@@ -288,14 +347,14 @@ const QuickAction = ({ title, sub, icon, bg, onClick }: any) => (
 const UploadBox = ({ id, label, value, onUpload, onRemove, progress }: any) => (
   <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center space-x-3">
     <div className="w-14 h-14 bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 flex items-center justify-center">
-      {value ? <img src={value} className="w-full h-full object-cover" alt="P" /> : <div className="text-[6px] text-slate-300">NO IMG</div>}
+      {value ? <img src={value} className="w-full h-full object-cover" alt="P" /> : <div className="text-[6px] text-slate-300 text-center">NO IMAGE</div>}
     </div>
     <div className="flex-1">
       <p className="text-[8px] font-light-custom text-slate-400 uppercase tracking-widest mb-1">{label}</p>
       <div className="flex items-center space-x-2">
         <label htmlFor={id} className="px-3 py-1 bg-indigo-600 text-white font-heavy-custom text-[7px] uppercase tracking-widest rounded cursor-pointer">{progress || 'चुनें'}</label>
         <input id={id} type="file" onChange={onUpload} className="hidden" />
-        {value && <button onClick={onRemove} className="text-[7px] text-rose-500 uppercase">हटाएँ</button>}
+        {value && <button onClick={onRemove} className="text-[7px] text-rose-500 uppercase font-bold">हटाएँ</button>}
       </div>
     </div>
   </div>

@@ -14,7 +14,7 @@ export const INITIAL_SETTINGS: AppSettings = {
 
 export const UI_STRINGS = {
   appName: 'यादव समाज वागड़ चौरासी',
-  shortName: 'यादव समाज',
+  shortName: 'यादव समाज वागड़ चौरासी',
   tagline: 'शिक्षित बनो, संगठित रहो, संघर्ष करो',
   copyright: 'यादव समाज वागड़ चौरासी © 2026'
 };

@@ -16,7 +16,7 @@ export interface DynamicField {
 
 export interface Village {
   id: string;
-  villageCode: string; // Automatic Unique Village Number
+  villageCode: string;
   name: string;
   district: string;
   tehsil: string;
@@ -30,7 +30,7 @@ export interface Contact {
   villageId: string;
   familyId?: string;
   name: string;
-  fatherName: string; // New Core Field
+  fatherName: string;
   mobile: string;
   profession: string;
   dynamicValues: Record<string, any>;
@@ -42,23 +42,16 @@ export interface Contact {
 
 export interface Bulletin {
   id: string;
-  villageId: string;
   title: string;
-  description: string;
-  date: string;
-  location: string;
-  contactPerson: string;
-  expiryDate: string;
+  content: string;
+  isDeleted: boolean;
 }
 
 export interface Banner {
   id: string;
-  image: string;
-  title: string;
-  description: string;
-  link: string;
-  position: 'Top' | 'Bottom' | 'Village' | 'Diary';
-  isActive: boolean;
+  imageUrl: string;
+  title?: string;
+  isDeleted: boolean;
 }
 
 export interface AppSettings {
@@ -66,14 +59,12 @@ export interface AppSettings {
   senderMobile: string;
   templateId: string;
   messageId: string;
-  phoneNumberId?: string; // For WhatsApp Route
   otpMessage: string;
-  diaryYear: string;
-  pageSize: 'A4' | 'A5';
-  fontSize: 'Small' | 'Medium' | 'Large';
-  isBackupActive: boolean;
   logoUrl: string; 
-  proxyUrl?: string; // New field for CORS Proxy
+  backgroundImageUrl?: string; // New: Persistent background
+  proxyUrl?: string;
+  aiKeyPrimary: string;
+  aiKeySecondary: string;
 }
 
 export interface User {

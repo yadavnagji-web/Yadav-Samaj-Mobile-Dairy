@@ -48,7 +48,7 @@ const Help: React.FC<HelpProps> = ({ logoUrl }) => {
             <p className="text-slate-400 font-bold">संपर्क सूत्र (Contact Us)</p>
           </div>
           <div className="bg-white/10 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-xl text-center">
-            <p className="text-xl font-black text-amber-400">Nagji Yadav sakodara</p>
+            <p className="text-xl font-black text-amber-400">नगजी यादव (साकोदरा)</p>
             <a href="tel:9982151938" className="text-3xl font-black block mt-2 hover:text-blue-400 transition-colors">9982151938</a>
             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-300 mt-4">Available on WhatsApp</p>
           </div>

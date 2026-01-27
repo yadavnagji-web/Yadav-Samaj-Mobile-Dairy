@@ -1,7 +1,8 @@
 {
-  "name": "यादव समाज वागड़ चौरासी मोबाइल डायरी",
-  "description": "यादव समाज वागड़ चौरासी की डिजिटल ग्राम निर्देशिका एवं सामाजिक डायरी",
+  "name": "BHIM Mobile Dairy",
+  "description": "एक अत्यंत शक्तिशाली AI-Based Hybrid Application - डिजिटल ग्राम निर्देशिका एवं सामाजिक डायरी",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "camera"
   ]
 }

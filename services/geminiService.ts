@@ -1,141 +1,144 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-// Helper to initialize AI right before use as per guidelines to ensure the latest API key is used
-function getAI() {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === "") return null;
-  return new GoogleGenAI({ apiKey });
-}
+// Cache for settings to avoid prop drilling in simple services
+let cachedSettings: any = null;
+export const updateServiceSettings = (settings: any) => {
+  cachedSettings = settings;
+};
 
-export async function parseSmartIntent(query: string) {
-  const ai = getAI();
-  if (!ai) return { intent: "DISABLED", message: "AI सुविधा फिलहाल उपलब्ध नहीं है।" };
-
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `उपयोगकर्ता ने कहा: "${query}". 
-      केवल हिंदी में जवाब दें।
-      Intents: NAVIGATE_VILLAGE, SEARCH_CONTACT, NAVIGATE_HOME, HELP, FORBIDDEN.
-      नियम: केवल हिंदी भाषा का प्रयोग करें।`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            intent: { type: Type.STRING },
-            village_name: { type: Type.STRING, nullable: true },
-            search_term: { type: Type.STRING, nullable: true },
-            message: { type: Type.STRING }
-          },
-          required: ["intent", "message"]
-        },
-      },
-    });
-    return JSON.parse(response.text || '{}');
-  } catch (error) { return null; }
-}
-
-/**
- * Parses natural language voice queries into search filters.
- * Fixes: Module '"../services/geminiService"' has no exported member 'parseVoiceQuery'.
- */
-export async function parseVoiceQuery(query: string) {
-  const ai = getAI();
-  if (!ai) return null;
+async function callGroq(prompt: string, schema?: any) {
+  const groqKey = cachedSettings?.aiKeySecondary;
+  if (!groqKey) return null;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `उपयोगकर्ता की आवाज़ खोज: "${query}". 
-      संभावित गाँव का नाम, व्यक्ति का नाम या पेशा निकालें।
-      केवल हिंदी में परिणाम दें।`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            village: { type: Type.STRING, nullable: true },
-            name: { type: Type.STRING, nullable: true },
-            profession: { type: Type.STRING, nullable: true }
-          },
-        },
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${groqKey}`,
+        "Content-Type": "application/json"
       },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { 
+            role: "system", 
+            content: `You are a helpful assistant for BHIM Mobile Dairy. Always respond in JSON format matching this schema: ${JSON.stringify(schema)}. Output MUST be valid JSON only.`
+          },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      })
     });
-    return JSON.parse(response.text || '{}');
-  } catch (error) {
-    console.error("Voice Query Parse Error", error);
+    const data = await response.json();
+    return JSON.parse(data.choices[0].message.content);
+  } catch (e) {
+    console.error("Groq Fallback Failed", e);
     return null;
   }
 }
 
+export async function parseSmartIntent(query: string) {
+  // Fixed: Always use process.env.API_KEY directly for initializing GoogleGenAI as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      intent: { type: Type.STRING },
+      village_name: { type: Type.STRING },
+      search_term: { type: Type.STRING },
+      message: { type: Type.STRING }
+    },
+    required: ["intent", "message"]
+  };
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `उपयोगकर्ता: "${query}". Intents: NAVIGATE_VILLAGE, SEARCH_CONTACT, NAVIGATE_HOME, HELP. केवल हिंदी में।`,
+      config: { responseMimeType: "application/json", responseSchema: schema as any },
+    });
+    // Fixed: Use .text property directly as per extracting text guidelines
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    console.warn("Gemini Failed, switching to Groq...");
+    return await callGroq(query, schema);
+  }
+}
+
+export async function parseVoiceQuery(query: string) {
+  // Fixed: Always use process.env.API_KEY directly for initializing GoogleGenAI as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      village: { type: Type.STRING },
+      name: { type: Type.STRING },
+      profession: { type: Type.STRING }
+    },
+  };
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `आवाज़ खोज: "${query}". गाँव, नाम या पेशा निकालें।`,
+      config: { responseMimeType: "application/json", responseSchema: schema as any },
+    });
+    // Fixed: Use .text property directly as per extracting text guidelines
+    return JSON.parse(response.text || '{}');
+  } catch (e) {
+    console.warn("Gemini Voice Parse Failed, switching to Groq...");
+    return await callGroq(query, schema);
+  }
+}
+
 export async function speakText(text: string) {
-  const ai = getAI();
-  if (!ai) return;
+  // Fixed: Always use process.env.API_KEY directly for initializing GoogleGenAI as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `हिंदी में स्पष्ट बोलें: ${text}` }] }],
+      contents: [{ parts: [{ text: `बोलें: ${text}` }] }],
       config: {
         responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' }, 
-          },
-        },
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
       },
     });
-
+    // Fixed: Accessing audio data from response parts using .candidates property chain
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (base64Audio) await playRawAudio(base64Audio);
-  } catch (error) { console.error("TTS Error", error); }
+  } catch (error) {
+    // Fallback to browser SpeechSynthesis if Gemini TTS fails
+    const synth = window.speechSynthesis;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'hi-IN';
+    synth.speak(utter);
+  }
 }
 
-// Manual implementation of decode as per guidelines
 function decode(base64: string) {
   const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
   return bytes;
 }
 
-// Audio decoding following the recommended pattern in the guidelines
-async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
+// Fixed: Custom Audio Decoding for raw PCM data as per SDK guidelines
+async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number) {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
+    for (let i = 0; i < frameCount; i++) channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
   }
   return buffer;
 }
 
-/**
- * Decodes and plays raw PCM audio data from the model.
- */
 async function playRawAudio(base64: string) {
   const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-  const audioBuffer = await decodeAudioData(
-    decode(base64),
-    ctx,
-    24000,
-    1
-  );
-  
+  const audioBuffer = await decodeAudioData(decode(base64), ctx, 24000, 1);
   const source = ctx.createBufferSource();
   source.buffer = audioBuffer;
   source.connect(ctx.destination);

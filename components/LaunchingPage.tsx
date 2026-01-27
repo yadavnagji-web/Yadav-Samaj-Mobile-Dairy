@@ -9,96 +9,79 @@ interface LaunchingPageProps {
 }
 
 const LaunchingPage: React.FC<LaunchingPageProps> = ({ onComplete, logoUrl }) => {
-  const [panchang, setPanchang] = useState(getHindiDateInfo());
   const [fade, setFade] = useState(false);
+  const [info, setInfo] = useState<any>(null);
 
   useEffect(() => {
+    setInfo(getHindiDateInfo());
     const timer = setTimeout(() => {
       setFade(true);
-      setTimeout(onComplete, 800);
-    }, 5000);
+      setTimeout(onComplete, 1000);
+    }, 4500); 
     return () => clearTimeout(timer);
   }, [onComplete]);
 
+  if (!info) return null;
+
   return (
-    <div className={`fixed inset-0 z-[100] bg-[#0f172a] flex flex-col items-center justify-between text-white transition-opacity duration-700 overflow-hidden ${fade ? 'opacity-0' : 'opacity-100'}`}>
-      {/* Background Animated Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-amber-600/10 blur-[120px] rounded-full"></div>
+    <div className={`fixed inset-0 z-[100] bg-gradient-to-br from-indigo-600 via-purple-500 to-pink-500 flex flex-col items-center justify-between transition-all duration-1000 overflow-hidden ${fade ? 'opacity-0 scale-110' : 'opacity-100 scale-100'}`}>
+      
+      {/* Animated Bubbles for "Happy" look */}
+      <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-10 w-48 h-48 bg-amber-400/20 rounded-full blur-3xl animate-bounce"></div>
+      
+      {/* Top Section - Today's Info */}
+      <div className="pt-16 px-6 text-center animate-slide-down w-full relative z-10">
+        <div className="bg-white/10 backdrop-blur-2xl p-8 rounded-[3.5rem] border border-white/20 shadow-2xl mb-6">
+          <p className="text-white text-xl font-black leading-tight mb-4 italic drop-shadow-lg">
+            "{UI_STRINGS.tagline}"
+          </p>
+          <div className="h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent w-40 mx-auto mb-6 rounded-full"></div>
+          
+          <div className="flex flex-wrap justify-center gap-3 text-[11px] font-black uppercase tracking-widest">
+            <span className="bg-white/20 text-white px-5 py-2 rounded-full border border-white/30">{info.vaar}</span>
+            <span className="bg-white/20 text-white px-5 py-2 rounded-full border border-white/30">{info.dinank}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Brand Header Section */}
-      <div className="flex-1 flex flex-col items-center justify-center z-10 w-full px-6 text-center animate-fade-in-down">
-        <div className="relative mb-8">
-          <div className="absolute inset-0 bg-white/20 blur-xl rounded-full animate-pulse"></div>
-          <div className="relative w-24 h-24 md:w-32 md:h-32 bg-white rounded-full overflow-hidden flex items-center justify-center shadow-2xl border-4 border-amber-400 p-1">
+      {/* Center Section - Logo & Name */}
+      <div className="flex-1 flex flex-col items-center justify-center px-10 relative z-10">
+        <div className="relative group">
+          <div className="w-56 h-56 bg-white/20 rounded-full absolute inset-0 animate-ping -m-6 opacity-30"></div>
+          <div className="relative w-40 h-40 bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.3)] p-6 animate-pop-in border-8 border-white/10 flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-500">
             <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </div>
         </div>
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight leading-tight">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-white to-amber-200">
-            {UI_STRINGS.fullAppName}
-          </span>
-        </h1>
-        <div className="mt-4 flex items-center justify-center space-x-2">
-          <div className="h-[2px] w-8 bg-amber-400/50"></div>
-          <p className="text-amber-400 text-[10px] font-black tracking-[0.3em] uppercase">Vagad Chaurasi Region</p>
-          <div className="h-[2px] w-8 bg-amber-400/50"></div>
-        </div>
-      </div>
-
-      {/* Panchang UI Section - Fixed Spacing to avoid overlap */}
-      <div className="w-full px-6 mb-12 z-10 max-w-md animate-float">
-        <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] p-6 shadow-2xl">
-          <div className="text-center mb-4">
-            <span className="text-amber-400 font-black tracking-widest text-[10px] uppercase bg-white/5 px-4 py-1 rounded-full border border-white/10">आज का पंचांग</span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 text-center py-3 bg-white/5 rounded-2xl border border-white/5">
-              <p className="text-[9px] text-blue-300 font-bold uppercase tracking-widest mb-0.5">आज की तिथि</p>
-              <p className="text-xl font-black">{panchang.dinank}</p>
-            </div>
-            <PanchangItem label="वार" val={panchang.vaar} />
-            <PanchangItem label="माह" val={panchang.mahina} />
-            <PanchangItem label="पक्ष" val={panchang.paksh} />
-            <PanchangItem label="तिथि" val={panchang.tithi} />
+        
+        <div className="mt-12 text-center">
+          <h2 className="text-3xl font-black text-white drop-shadow-2xl tracking-tight uppercase leading-none">
+            {UI_STRINGS.shortName}
+          </h2>
+          <div className="mt-4 inline-block bg-amber-400 text-indigo-900 px-6 py-2 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] shadow-xl">
+            डिजिटल मोबाइल डायरी
           </div>
         </div>
       </div>
 
-      {/* Loading Footer */}
-      <div className="pb-12 text-center z-10">
-        <div className="flex items-center justify-center space-x-2 mb-4">
-          <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce"></span>
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:0.2s]"></span>
-          <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+      {/* Bottom Section - Footer */}
+      <div className="pb-16 text-center space-y-4 relative z-10">
+        <div className="flex flex-col items-center opacity-60">
+           <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg border border-white/20 mb-3">
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${window.location.origin}`} className="w-full h-full" alt="QR" />
+           </div>
+           <p className="text-white text-[9px] font-black uppercase tracking-[0.5em]">Digital Directory 2026</p>
         </div>
-        <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em]">डिजिटल इंडिया • डिजिटल समाज</p>
       </div>
 
       <style>{`
-        @keyframes fade-in-down {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        .animate-fade-in-down { animation: fade-in-down 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-float { animation: float 4s ease-in-out infinite; }
+        @keyframes popIn { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop-in { animation: popIn 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes slideDown { 0% { transform: translateY(-60px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        .animate-slide-down { animation: slideDown 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
   );
 };
-
-const PanchangItem = ({ label, val }: { label: string, val: string }) => (
-  <div className="bg-white/5 p-3 rounded-2xl border border-white/5 text-center">
-    <p className="text-[8px] text-amber-300 font-bold uppercase tracking-widest mb-0.5 opacity-70">{label}</p>
-    <p className="text-base font-black truncate">{val}</p>
-  </div>
-);
 
 export default LaunchingPage;

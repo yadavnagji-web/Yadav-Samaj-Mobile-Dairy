@@ -9,107 +9,127 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, settings }) => {
-  const [mobile, setMobile] = useState('');
+  const [id, setId] = useState('');
   const [password, setPassword] = useState('');
-  const [isAdminMode, setIsAdminMode] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const sanitizeNumber = (num: string) => {
-    let cleaned = num.replace(/\D/g, '');
-    if (cleaned.startsWith('91') && cleaned.length === 12) cleaned = cleaned.substring(2);
-    if (cleaned.length > 10) cleaned = cleaned.slice(-10);
-    return cleaned;
-  };
-
-  const handleUserLogin = () => {
-    const cleanMobile = sanitizeNumber(mobile);
-    if (cleanMobile.length !== 10) {
-      return setError('कृपया 10 अंकों का सही मोबाइल नंबर दर्ज करें');
-    }
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
     
-    setLoading(true);
-    setTimeout(() => {
-      onLogin({ id: 'u' + Date.now(), mobile: cleanMobile, role: 'user' });
-      navigate('/');
-      setLoading(false);
-    }, 500);
-  };
+    const inputId = id.trim().toLowerCase();
+    const inputPass = password.trim();
 
-  const handleAdminLogin = () => {
-    if ((mobile === 'yadavnagji@gmail.com' || mobile === '9982151938') && password === '123456') {
-      onLogin({ id: 'admin', mobile: 'Admin', role: 'admin' });
-      navigate('/admin');
+    const ADMIN_EMAIL = 'yadavnagji@gmail.com';
+    const ADMIN_MOBILE = '9982151938';
+    const ADMIN_PASS = '123456';
+
+    if ((inputId === ADMIN_EMAIL || inputId === ADMIN_MOBILE) && inputPass === ADMIN_PASS) {
+      setLoading(true);
+      const adminUser: User = { 
+        id: 'admin-session', 
+        mobile: 'Admin', 
+        role: 'admin' 
+      };
+      
+      setTimeout(() => {
+        onLogin(adminUser);
+        navigate('/admin');
+      }, 800);
     } else {
-      setError('गलत एडमिन आईडी या पासवर्ड!');
+      setError('गलत आईडी या पासवर्ड! कृपया सही जानकारी भरें।');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-12 px-4 animate-fade-in">
-      <div className="bg-white p-10 rounded-[3.5rem] shadow-2xl border border-slate-100 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16"></div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-transparent">
+      <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-[4rem] p-12 shadow-[0_50px_100px_rgba(0,0,0,0.1)] border border-white relative overflow-hidden">
         
-        <div className="text-center mb-10 relative z-10">
-          <div className="w-24 h-24 bg-white rounded-full overflow-hidden flex items-center justify-center mx-auto mb-6 shadow-xl border-4 border-amber-400 p-1">
+        {/* Decorative Background Element */}
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl"></div>
+
+        {/* Home Back Button */}
+        <button 
+          onClick={() => navigate('/')} 
+          className="absolute top-8 left-8 p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-lg transition-all active:scale-90 flex items-center justify-center group"
+          title="होम पेज"
+        >
+           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+           </svg>
+        </button>
+
+        <div className="text-center mb-12 mt-6 relative z-10">
+          <div className="w-24 h-24 bg-white rounded-3xl shadow-xl border border-slate-50 p-4 mx-auto mb-8 flex items-center justify-center transform hover:rotate-6 transition-transform">
             <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <h2 className="text-3xl font-black text-indigo-900 tracking-tight">लॉगिन करें</h2>
-          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-2">यादव समाज वागड़ चौरासी मोबाइल डायरी</p>
-        </div>
-
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-8 relative z-10">
-          <button onClick={() => { setIsAdminMode(false); setError(''); }} className={`flex-1 py-3 rounded-xl font-black text-sm transition-all ${!isAdminMode ? 'bg-indigo-700 text-white shadow-lg' : 'text-slate-400'}`}>यूजर</button>
-          <button onClick={() => { setIsAdminMode(true); setError(''); }} className={`flex-1 py-3 rounded-xl font-black text-sm transition-all ${isAdminMode ? 'bg-indigo-700 text-white shadow-lg' : 'text-slate-400'}`}>एडमिन</button>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none uppercase">
+            Admin Panel
+          </h2>
+          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] mt-3">Elite System Login</p>
         </div>
 
         {error && (
-          <div className="text-red-600 text-[11px] mb-6 text-center font-black uppercase bg-red-50 p-5 rounded-3xl border border-red-100 animate-pulse leading-relaxed shadow-inner">
+          <div className="mb-8 p-5 bg-rose-50 text-rose-600 rounded-[2rem] text-[11px] font-black uppercase text-center border border-rose-100 animate-pulse">
             {error}
           </div>
         )}
 
-        <div className="relative z-10">
-          {!isAdminMode ? (
-            <div className="space-y-6">
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3 block mb-2">मोबाइल नंबर</label>
-                <div className="relative">
-                  <span className="absolute left-5 top-4.5 font-bold text-slate-400">+91</span>
-                  <input 
-                    type="tel" 
-                    placeholder="9876543210" 
-                    className="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 outline-none font-bold" 
-                    value={mobile} 
-                    onChange={e => setMobile(e.target.value)} 
-                  />
-                </div>
-              </div>
-              <button 
-                onClick={handleUserLogin} 
-                disabled={loading}
-                className={`w-full bg-green-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-green-100 active:scale-95 transition-all flex items-center justify-center group ${loading ? 'opacity-70' : ''}`}
-              >
-                {loading ? 'लॉगिन हो रहा है...' : 'डायरेक्ट लॉगिन'}
-              </button>
+        <form onSubmit={handleAdminLogin} className="stagger-anim relative z-10 space-y-8">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-5 block">ID / Mobile Number</label>
+            <div className="relative group">
+              <span className="absolute left-6 top-6 text-xl text-indigo-300 transition-colors group-focus-within:text-indigo-600">👤</span>
+              <input 
+                type="text" 
+                placeholder="yadavnagji@gmail.com" 
+                className="w-full pl-16 pr-8 py-6 rounded-3xl bg-slate-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white outline-none font-bold text-slate-700 transition-all shadow-inner" 
+                value={id} 
+                onChange={e => setId(e.target.value)} 
+                required
+              />
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3 block mb-2">एडमिन आईडी</label>
-                <input type="text" placeholder="yadavnagji@gmail.com" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 outline-none font-bold" value={mobile} onChange={e => setMobile(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3 block mb-2">पासवर्ड</label>
-                <input type="password" placeholder="******" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 outline-none font-bold" value={password} onChange={e => setPassword(e.target.value)} />
-              </div>
-              <button onClick={handleAdminLogin} className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-xl active:scale-95 transition-all">एडमिन लॉगिन</button>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-5 block">Password</label>
+            <div className="relative group">
+              <span className="absolute left-6 top-6 text-xl text-indigo-300 transition-colors group-focus-within:text-indigo-600">🔑</span>
+              <input 
+                type="password" 
+                placeholder="••••••" 
+                className="w-full pl-16 pr-8 py-6 rounded-3xl bg-slate-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white outline-none font-bold text-slate-700 transition-all shadow-inner" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required
+              />
             </div>
-          )}
-        </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-800 text-white font-black py-6 rounded-[2rem] shadow-2xl shadow-indigo-200 active:scale-95 transition-all mt-6 flex items-center justify-center space-x-3"
+          >
+            {loading ? (
+              <span className="flex items-center space-x-3">
+                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="uppercase tracking-widest text-xs">Authenticating...</span>
+              </span>
+            ) : (
+              <span className="uppercase tracking-[0.2em] text-xs">Login to Panel</span>
+            )}
+          </button>
+        </form>
+
+        <p className="mt-12 text-center text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">नगजी यादव (साकोदरा) • Admin System</p>
       </div>
-      <p className="text-center mt-8 text-slate-400 font-bold text-[10px] uppercase tracking-[0.3em]">© 2026 यादव समाज वागड़ चौरासी मोबाइल डायरी</p>
     </div>
   );
 };

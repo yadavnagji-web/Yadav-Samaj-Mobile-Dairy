@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Village, Contact } from '../types';
 import { UI_STRINGS } from '../constants';
@@ -16,7 +16,6 @@ interface MobileDrawerProps {
 
 const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, user, onLogout, villages, contacts = [] }) => {
   const navigate = useNavigate();
-  const [showFullGuide, setShowFullGuide] = useState(false);
 
   if (!isOpen) return null;
 
@@ -38,30 +37,19 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, user, onLo
         <div className="flex-1 overflow-y-auto px-6 py-8 space-y-3 bg-slate-50/20">
           <DrawerItem icon="✨" label="नया सदस्य पंजीकरण" onClick={() => { navigate('/register'); onClose(); }} highlight={true} />
           <DrawerItem icon="🏘️" label="होम स्क्रीन" onClick={() => { navigate('/'); onClose(); }} />
-          <DrawerItem icon="🖨️" label="PDF डायरी" onClick={() => { window.print(); onClose(); }} subLabel="सभी गाँव + QR" />
-          <DrawerItem icon="📊" label="Excel Backup" onClick={() => { exportContactsToExcel(contacts, villages); onClose(); }} />
+          <DrawerItem icon="📖" label="उपयोग मार्गदर्शिका" onClick={() => { navigate('/help'); onClose(); }} subLabel="Step-by-Step Guide" />
           
           <div className="h-px bg-slate-100 my-4"></div>
+
+          <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-4 mb-2">डाउनलोड एवं प्रिंट</p>
+          <DrawerItem icon="🖨️" label="सभी गाँव के QR कोड (PDF)" onClick={() => { window.print(); onClose(); }} subLabel="Direct Access Cards" />
+          <DrawerItem icon="📁" label="पूरी समाज डायरी (PDF)" onClick={() => { window.print(); onClose(); }} subLabel="Members + QR" />
+          <DrawerItem icon="📊" label="Excel Backup" onClick={() => { exportContactsToExcel(contacts, villages); onClose(); }} />
           
-          <button onClick={() => setShowFullGuide(!showFullGuide)} className="w-full flex items-center justify-between p-4 bg-indigo-50 rounded-2xl text-indigo-900 border border-indigo-100">
-            <div className="flex items-center space-x-3">
-              <span className="text-lg">📖</span>
-              <span className="text-xs font-heavy-custom">उपयोग मार्गदर्शिका</span>
-            </div>
-          </button>
-
-          {showFullGuide && (
-            <div className="p-4 bg-white rounded-2xl border border-indigo-50 space-y-3 animate-slide-up">
-              <GuideStep num="1" title="गाँव चुनें" text="ड्रॉपडाउन से अपने गाँव का चयन करें।" />
-              <GuideStep num="2" title="सर्च करें" text="नाम या मोबाइल से फिल्टर करें।" />
-              <GuideStep num="3" title="सीधा कॉल" text="नंबर पर क्लिक कर कॉल लगाएँ।" />
-            </div>
-          )}
-
           <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 mt-6">
-            <p className="text-[9px] font-light-custom text-amber-600 uppercase tracking-widest mb-2">ADMIN HELP</p>
+            <p className="text-[9px] font-light-custom text-amber-600 uppercase tracking-widest mb-2">SUPPORT HELP</p>
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-lg">👨‍💻</div>
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-lg shadow-sm">👨‍💻</div>
               <div>
                 <p className="text-[11px] font-heavy-custom text-amber-950">नगजी यादव (साकोदरा)</p>
                 <a href="tel:9982151938" className="text-[10px] font-light-custom text-amber-600">9982151938</a>
@@ -101,16 +89,6 @@ const DrawerItem = ({ icon, label, onClick, subLabel, highlight }: any) => (
       {subLabel && <p className="text-[8px] font-light-custom uppercase tracking-widest opacity-60">{subLabel}</p>}
     </div>
   </button>
-);
-
-const GuideStep = ({ num, title, text }: any) => (
-  <div className="flex items-start space-x-3">
-    <div className="w-5 h-5 rounded-full bg-indigo-600 text-[8px] flex items-center justify-center text-white shrink-0 font-heavy-custom">{num}</div>
-    <div>
-      <p className="text-[10px] font-heavy-custom text-indigo-900">{title}</p>
-      <p className="text-[9px] font-light-custom text-slate-400">{text}</p>
-    </div>
-  </div>
 );
 
 export default MobileDrawer;

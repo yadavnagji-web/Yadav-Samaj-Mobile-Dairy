@@ -1,14 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// Fixed: Added missing Bulletin and Banner to imports
 import { Village, Contact, DynamicField, Bulletin, Banner } from '../types';
 
 interface VillageDetailsProps {
   villages: Village[];
   contacts: Contact[];
   fields: DynamicField[];
-  // Fixed: Added missing bulletins and banners properties to the interface
   bulletins: Bulletin[];
   banners: Banner[];
   externalSearch?: string;
@@ -18,7 +16,6 @@ interface VillageDetailsProps {
 const VillageDetails: React.FC<VillageDetailsProps> = ({ 
   villages, 
   contacts, 
-  // Destructured additional props to align with the interface and usage in App.tsx
   fields,
   bulletins,
   banners,
@@ -57,25 +54,49 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
     }
   };
 
+  // Improved QR Generation with better contrast and error margin
+  const villageUrl = `${window.location.origin}/#/village/${village.id}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(villageUrl)}&bgcolor=ffffff&color=000000&margin=20`;
+
   return (
     <div className="flex flex-col min-h-screen bg-transparent">
       {/* Header */}
-      <header className="premium-header px-4 py-10 rounded-b-[3.5rem] shadow-xl">
-        <div className="flex items-center justify-between mb-10">
+      <header className="premium-header px-4 pt-8 pb-10 rounded-b-[3.5rem] shadow-xl relative overflow-hidden">
+        {/* Background Accent */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+
+        <div className="flex items-start justify-between mb-8 relative z-10">
           <button onClick={() => navigate('/')} className="bg-white/10 p-3 rounded-[1.25rem] border border-white/20 text-white transition-all active:scale-90">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <div className="text-center">
-             <h2 className="text-2xl font-heavy-custom text-white">{village.name}</h2>
+          
+          <div className="text-center flex-1 px-4">
+             <h2 className="text-2xl font-heavy-custom text-white leading-tight">{village.name}</h2>
              <p className="text-[10px] font-light-custom text-blue-100 uppercase tracking-widest mt-1">{village.tehsil} - {village.district}</p>
           </div>
+
           <button onClick={() => window.print()} className="bg-white/10 p-3 rounded-[1.25rem] border border-white/20 text-white transition-all active:scale-90">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
           </button>
         </div>
 
-        {/* Fully Rounded Search Box */}
-        <div className="bg-white/10 border border-white/20 backdrop-blur-md rounded-full flex items-center px-6 h-14">
+        {/* Improved QR Visibility Section */}
+        <div className="flex flex-col items-center justify-center mb-8 animate-slide-down relative z-10">
+          <div className="bg-white p-3 rounded-[2.5rem] shadow-2xl border-4 border-indigo-400/30 overflow-hidden transform hover:scale-105 transition-transform">
+            <img 
+              src={qrUrl} 
+              alt="Village QR" 
+              className="w-28 h-28 rounded-2xl"
+              style={{ minWidth: '112px', minHeight: '112px' }}
+            />
+          </div>
+          <p className="text-[9px] font-black text-white bg-indigo-900/40 px-5 py-1.5 rounded-full uppercase tracking-[0.3em] mt-4 border border-white/20 backdrop-blur-sm">
+            गाँव की डिजिटल डायरी QR
+          </p>
+        </div>
+
+        {/* Search Box */}
+        <div className="bg-white/10 border border-white/20 backdrop-blur-md rounded-full flex items-center px-6 h-14 relative z-10">
            <svg className="w-5 h-5 mr-4 text-blue-100 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
            <input 
              type="text" 
@@ -89,10 +110,13 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
 
       {/* List */}
       <div className="flex-1 px-4 py-8 space-y-4 pb-24">
-        <p className="text-[10px] font-light-custom text-slate-500 uppercase tracking-widest ml-4 mb-2">कुल सदस्य ({filteredContacts.length})</p>
+        <div className="flex items-center justify-between px-4 mb-2">
+          <p className="text-[10px] font-light-custom text-slate-500 uppercase tracking-widest">कुल सदस्य ({filteredContacts.length})</p>
+          <div className="h-px bg-slate-100 flex-1 ml-4"></div>
+        </div>
         
-        {filteredContacts.map((c, i) => (
-          <div key={c.id} className="bg-white/80 backdrop-blur-md p-5 rounded-[2.25rem] border border-white/50 flex items-center shadow-sm">
+        {filteredContacts.map((c) => (
+          <div key={c.id} className="bg-white/80 backdrop-blur-md p-5 rounded-[2.25rem] border border-white/50 flex items-center shadow-sm hover:shadow-md transition-shadow">
             <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-50/50 text-indigo-700 flex items-center justify-center font-heavy-custom text-xl mr-5 border border-indigo-100 shadow-inner">
               {c.name.charAt(0)}
             </div>
@@ -103,7 +127,6 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <button 
-                // Fix: Changing 'contact' to 'c' to match the variable in the map function
                 onClick={() => handleShare(c)}
                 className="w-11 h-11 bg-white/40 rounded-[1.25rem] flex items-center justify-center text-slate-400 hover:text-green-500 transition-colors active:scale-90"
               >
@@ -125,6 +148,14 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-down { animation: slideDown 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+      `}</style>
     </div>
   );
 };

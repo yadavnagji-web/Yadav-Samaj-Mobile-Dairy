@@ -45,6 +45,13 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, user, onLogou
     }
   };
 
+  const getVillageQR = (vId: string) => {
+    const villageUrl = `${window.location.origin}/#/village/${vId}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(villageUrl)}&bgcolor=ffffff&color=4f46e5&margin=10`;
+  };
+
+  const selectedVillage = villages.find(v => v.id === selectedVillageId);
+
   return (
     <div className="flex flex-col min-h-screen bg-transparent print:bg-white">
       <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} onLogout={onLogout} villages={villages} contacts={contacts} />
@@ -91,8 +98,23 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, user, onLogou
 
       <main className="flex-1 p-4 pb-24 print:hidden">
         {(selectedVillageId || search) ? (
-          <div className="space-y-3">
-            <h2 className="text-[9px] font-light-custom text-indigo-900/40 uppercase tracking-[0.3em] px-2 mb-2">खोज परिणाम ({filteredList.length})</h2>
+          <div className="space-y-4">
+            {/* Show Village QR Only if a village is selected */}
+            {selectedVillage && (
+              <div className="bg-white/90 backdrop-blur-md p-6 rounded-[3rem] border border-white/50 shadow-lg flex flex-col items-center animate-slide-up mb-6">
+                <div className="w-32 h-32 bg-indigo-50 rounded-[2rem] p-3 border border-indigo-100 shadow-inner">
+                  <img src={getVillageQR(selectedVillage.id)} alt={selectedVillage.name} className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <h3 className="text-sm font-heavy-custom text-indigo-950 mt-4">{selectedVillage.name} गाँव की डिजिटल डायरी</h3>
+                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mt-1">स्कैन करके सीधे इस गाँव पर आएँ</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between px-2 mb-2">
+              <h2 className="text-[9px] font-light-custom text-indigo-900/40 uppercase tracking-[0.3em]">खोज परिणाम ({filteredList.length})</h2>
+              <div className="h-px bg-slate-100 flex-1 ml-4"></div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredList.map((c) => (
                 <div key={c.id} className="item-card flex items-center p-4 bg-white/90 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm">
@@ -117,13 +139,18 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, user, onLogou
             </div>
           </div>
         ) : (
-          <div className="py-20 text-center space-y-6">
-             <div className="flex flex-col items-center justify-center mx-auto space-y-2">
-                <span className="text-slate-200 text-6xl opacity-20">🏘️</span>
+          <div className="space-y-8 animate-fade-in flex flex-col items-center justify-center py-20 opacity-30 text-center">
+             <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center mb-6">
+                <span className="text-4xl">📖</span>
              </div>
-             <p className="text-[10px] font-light-custom text-slate-500 uppercase tracking-widest max-w-[200px] mx-auto leading-loose italic">
-               यादव समाज की डिजिटल डायरी में आपका स्वागत है। अपना गाँव चुनें।
-             </p>
+             <div>
+               <p className="text-[11px] font-heavy-custom text-indigo-900 uppercase tracking-widest leading-loose">
+                 यादव समाज वागड़ चौरासी <br/> डिजिटल मोबाइल डायरी
+               </p>
+               <p className="text-[9px] font-light-custom text-slate-500 mt-2 uppercase tracking-widest max-w-[220px]">
+                 कृपया अपना गाँव चुनें या सदस्य का नाम लिखकर खोजें।
+               </p>
+             </div>
           </div>
         )}
       </main>

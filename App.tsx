@@ -12,6 +12,7 @@ import { syncCollection } from './services/firebase';
 
 import SmartAssistant from './components/SmartAssistant';
 import FullPrintView from './components/FullPrintView';
+import VillageQRPrintView from './components/VillageQRPrintView';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
@@ -71,7 +72,10 @@ const AppRoutes: React.FC<{
   return (
     <div style={bgStyle} className="min-h-screen transition-all duration-700">
       <SmartAssistant onAction={handleAIAction} />
+      
+      {/* Print Views (Hidden on screen) */}
       <FullPrintView contacts={props.contacts} villages={props.villages} />
+      <VillageQRPrintView villages={props.villages} />
       
       <main className="w-full min-h-screen print:hidden relative z-10">
         <Routes>

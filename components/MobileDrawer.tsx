@@ -40,14 +40,14 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, user, onLo
             </button>
           </div>
           <div className="relative z-10">
-            <h2 className="text-xl font-black leading-tight tracking-tight uppercase drop-shadow-md">{UI_STRINGS.shortName}</h2>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/70 mt-2">समाज उत्थान • डिजिटल क्रांति</p>
+            <h2 className="text-xl font-heavy-custom leading-tight tracking-tight uppercase drop-shadow-md">{UI_STRINGS.shortName}</h2>
+            <p className="text-[10px] font-light-custom uppercase tracking-[0.4em] text-white/70 mt-2">समाज उत्थान • डिजिटल क्रांति</p>
           </div>
         </div>
 
         {/* Menu Items */}
         <div className="flex-1 overflow-y-auto px-6 py-8 space-y-4 bg-slate-50/30">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-2">मुख्य विकल्प</p>
+          <p className="text-[10px] font-light-custom text-slate-400 uppercase tracking-widest ml-4 mb-2">मुख्य विकल्प</p>
           
           <DrawerItem 
             icon="✨" 
@@ -86,7 +86,7 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, user, onLo
           >
             <div className="flex items-center space-x-4">
               <span className="text-xl">📖</span>
-              <span className="text-sm font-black text-indigo-900">ऐप का उपयोग कैसे करें?</span>
+              <span className="text-sm font-heavy-custom text-indigo-900">ऐप का उपयोग कैसे करें?</span>
             </div>
             <svg className={`w-5 h-5 text-indigo-400 transition-transform ${showFullGuide ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
           </button>
@@ -103,12 +103,12 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, user, onLo
 
           {/* Admin Help Info */}
           <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-[2.5rem] border border-amber-100 mt-6 shadow-sm">
-            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3">ADMIN HELP / सहायता</p>
+            <p className="text-[10px] font-light-custom text-amber-600 uppercase tracking-widest mb-3">ADMIN HELP / सहायता</p>
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-xl shadow-sm border border-amber-100">👨‍💻</div>
               <div>
-                <p className="text-sm font-black text-amber-950">नगजी यादव (साकोदरा)</p>
-                <a href="tel:9982151938" className="text-xs font-bold text-amber-600">9982151938</a>
+                <p className="text-sm font-heavy-custom text-amber-950">नगजी यादव (साकोदरा)</p>
+                <a href="tel:9982151938" className="text-xs font-light-custom text-amber-600">9982151938</a>
               </div>
             </div>
           </div>
@@ -121,8 +121,8 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, user, onLo
                <div className="flex items-center space-x-4">
                  <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-xl">👤</div>
                  <div>
-                   <p className="text-xs font-black text-indigo-900">{user.role === 'admin' ? 'Admin Panel' : 'यूज़र'}</p>
-                   <p className="text-[9px] font-bold text-slate-400">{user.mobile}</p>
+                   <p className="text-xs font-heavy-custom text-indigo-900">{user.role === 'admin' ? 'Admin Panel' : 'यूज़र'}</p>
+                   <p className="text-[9px] font-light-custom text-slate-400">{user.mobile}</p>
                  </div>
                </div>
                <button onClick={() => { onLogout(); onClose(); }} className="text-rose-500 p-3 hover:bg-rose-50 rounded-2xl transition-all active:scale-90">
@@ -132,7 +132,7 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, user, onLo
           ) : (
             <button 
               onClick={() => { navigate('/login'); onClose(); }} 
-              className="w-full py-6 bg-slate-900 text-white font-black rounded-[2.5rem] text-[10px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all"
+              className="w-full py-6 bg-slate-900 text-white font-heavy-custom rounded-[2.5rem] text-[10px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all"
             >
               Admin Panel लॉगिन
             </button>
@@ -159,18 +159,18 @@ const DrawerItem = ({ icon, label, onClick, subLabel, highlight }: any) => (
   >
     <span className={`text-xl ${highlight ? 'bg-white/20' : 'bg-white shadow-sm'} w-14 h-14 flex items-center justify-center rounded-2xl border ${highlight ? 'border-white/20' : 'border-slate-50'}`}>{icon}</span>
     <div className="text-left">
-      <p className={`text-sm font-black ${highlight ? 'text-white' : 'text-slate-800'}`}>{label}</p>
-      {subLabel && <p className={`text-[9px] font-bold uppercase tracking-widest ${highlight ? 'text-indigo-100' : 'text-slate-400'}`}>{subLabel}</p>}
+      <p className={`text-sm font-heavy-custom ${highlight ? 'text-white' : 'text-slate-800'}`}>{label}</p>
+      {subLabel && <p className={`text-[9px] font-light-custom uppercase tracking-widest ${highlight ? 'text-indigo-100' : 'text-slate-400'}`}>{subLabel}</p>}
     </div>
   </button>
 );
 
 const GuideStep = ({ num, title, text }: { num: string; title: string; text: string }) => (
   <div className="flex items-start space-x-4">
-    <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[11px] font-black text-white shrink-0 shadow-lg border-2 border-white">{num}</div>
+    <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[11px] font-heavy-custom text-white shrink-0 shadow-lg border-2 border-white">{num}</div>
     <div>
-      <p className="text-xs font-black text-indigo-900 leading-none">{title}</p>
-      <p className="text-[10px] font-bold text-slate-500 mt-1 leading-tight">{text}</p>
+      <p className="text-xs font-heavy-custom text-indigo-900 leading-none">{title}</p>
+      <p className="text-[10px] font-light-custom text-slate-500 mt-1 leading-tight">{text}</p>
     </div>
   </div>
 );

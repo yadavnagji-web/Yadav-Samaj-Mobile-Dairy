@@ -25,7 +25,7 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
     if (externalSearch !== undefined) setSearchTerm(externalSearch);
   }, [externalSearch]);
 
-  if (!village) return <div className="h-screen bg-transparent flex items-center justify-center font-black text-slate-300">डेटा लोड हो रहा है...</div>;
+  if (!village) return <div className="h-screen bg-transparent flex items-center justify-center font-heavy-custom text-slate-300">डेटा लोड हो रहा है...</div>;
 
   const filteredContacts = contacts
     .filter(c => c.villageId === id && !c.isDeleted && !c.isEmergency)
@@ -57,8 +57,8 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div className="text-center">
-             <h2 className="text-2xl font-black text-white">{village.name}</h2>
-             <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest mt-1">{village.tehsil} - {village.district}</p>
+             <h2 className="text-2xl font-heavy-custom text-white">{village.name}</h2>
+             <p className="text-[10px] font-light-custom text-blue-100 uppercase tracking-widest mt-1">{village.tehsil} - {village.district}</p>
           </div>
           <button onClick={() => window.print()} className="bg-white/10 p-3 rounded-[1.25rem] border border-white/20 text-white transition-all active:scale-90">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
@@ -71,7 +71,7 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
            <input 
              type="text" 
              placeholder="गाँव में सदस्य खोजें..." 
-             className="bg-transparent outline-none w-full text-sm font-bold text-white placeholder-blue-200"
+             className="bg-transparent outline-none w-full text-sm font-light-custom text-white placeholder-blue-200"
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
            />
@@ -80,17 +80,17 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
 
       {/* List */}
       <div className="flex-1 px-4 py-8 space-y-4 pb-24">
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 mb-2">कुल सदस्य ({filteredContacts.length})</p>
+        <p className="text-[10px] font-light-custom text-slate-500 uppercase tracking-widest ml-4 mb-2">कुल सदस्य ({filteredContacts.length})</p>
         
         {filteredContacts.map((c, i) => (
           <div key={c.id} className="bg-white/80 backdrop-blur-md p-5 rounded-[2.25rem] border border-white/50 flex items-center shadow-sm">
-            <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-50/50 text-indigo-700 flex items-center justify-center font-black text-xl mr-5 border border-indigo-100 shadow-inner">
+            <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-50/50 text-indigo-700 flex items-center justify-center font-heavy-custom text-xl mr-5 border border-indigo-100 shadow-inner">
               {c.name.charAt(0)}
             </div>
             <div className="flex-1">
-              <h4 className="font-black text-slate-800 text-base">{c.name}</h4>
-              <p className="text-[10px] font-bold text-slate-400 mt-0.5">पिता: {c.fatherName}</p>
-              <p className="text-indigo-600 font-black text-sm mt-1">{c.mobile}</p>
+              <h4 className="font-heavy-custom text-slate-800 text-base">{c.name}</h4>
+              <p className="text-[10px] font-light-custom text-slate-400 mt-0.5">पिता: {c.fatherName}</p>
+              <p className="text-indigo-600 font-heavy-custom text-sm mt-1">{c.mobile}</p>
             </div>
             <div className="flex items-center space-x-2">
               <button 
@@ -101,9 +101,9 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
               </button>
               <a 
                 href={`tel:${c.mobile}`}
-                className="w-11 h-11 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-xl shadow-indigo-100 active:scale-90"
+                className="w-11 h-11 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-xl shadow-indigo-100 active:scale-90 overflow-hidden"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1.01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1.01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
               </a>
             </div>
           </div>
@@ -111,7 +111,7 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
 
         {filteredContacts.length === 0 && (
           <div className="text-center py-24 opacity-30">
-            <p className="text-slate-400 font-black uppercase text-xs tracking-widest">कोई डेटा नहीं मिला</p>
+            <p className="text-slate-400 font-light-custom uppercase text-xs tracking-widest">कोई डेटा नहीं मिला</p>
           </div>
         )}
       </div>

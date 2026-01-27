@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="https://w7.pngwing.com/pngs/454/339/png-transparent-b-r-ambedkar-dalit-logo-dalit-s-blue-face-logo-thumbnail.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Noto+Sans+Devanagari:wght@100..900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;600;800;900&family=Noto+Sans+Devanagari:wght@100..900&display=swap');
       
       :root {
         --primary: #6366f1; 
@@ -27,7 +27,12 @@
         color: var(--text-dark);
         margin: 0;
         -webkit-tap-highlight-color: transparent;
+        font-weight: 400;
       }
+
+      .font-thin-custom { font-weight: 100; }
+      .font-light-custom { font-weight: 300; }
+      .font-heavy-custom { font-weight: 900; }
 
       .premium-header {
         background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);

@@ -73,10 +73,10 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 6h16M4 12h16M4 18h16" /></svg>
              </button>
              <div>
-               <h1 className="text-base font-black text-white tracking-tight leading-tight uppercase max-w-[200px] sm:max-w-none">
+               <h1 className="text-base font-heavy-custom text-white tracking-tight leading-tight uppercase max-w-[200px] sm:max-w-none">
                  {UI_STRINGS.shortName}
                </h1>
-               <p className="text-[9px] text-indigo-100 font-bold uppercase tracking-[0.2em] mt-2 opacity-90 border-l-2 border-amber-400 pl-2">
+               <p className="text-[9px] text-indigo-100 font-light-custom uppercase tracking-[0.2em] mt-2 opacity-90 border-l-2 border-amber-400 pl-2">
                  {UI_STRINGS.tagline}
                </p>
              </div>
@@ -93,14 +93,14 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
             <input 
               type="text" 
               placeholder="नाम या मोबाइल से खोजें..." 
-              className="flex-1 outline-none text-sm font-bold text-slate-700 bg-transparent placeholder-slate-400" 
+              className="flex-1 outline-none text-sm font-light-custom text-slate-700 bg-transparent placeholder-slate-400" 
               value={search} 
               onChange={(e) => setSearch(e.target.value)} 
             />
           </div>
 
           <div className="relative group">
-            <select className="w-full bg-white/20 backdrop-blur-lg border border-white/30 p-5 rounded-full text-white font-black text-sm outline-none appearance-none cursor-pointer focus:bg-white/30 transition-all px-8" value={selectedVillageId} onChange={(e) => setSelectedVillageId(e.target.value)}>
+            <select className="w-full bg-white/20 backdrop-blur-lg border border-white/30 p-5 rounded-full text-white font-heavy-custom text-sm outline-none appearance-none cursor-pointer focus:bg-white/30 transition-all px-8" value={selectedVillageId} onChange={(e) => setSelectedVillageId(e.target.value)}>
               <option value="" className="text-slate-800">--- अपना गाँव चुनें ---</option>
               {villages.filter(v => !v.isDeleted).sort((a,b)=>a.name.localeCompare(b.name,'hi')).map(v => (
                 <option key={v.id} value={v.id} className="text-slate-800">{v.name}</option>
@@ -118,15 +118,15 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
         {!selectedVillageId && !search && (
           <div className="mb-10 animate-slide-up">
             <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50 p-8 rounded-[3.5rem] border border-amber-100 shadow-xl relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-4 opacity-5 text-orange-400 text-9xl leading-none">“</div>
-               <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.4em] mb-4 flex items-center">
+               <div className="absolute top-0 right-0 p-4 opacity-5 text-orange-400 text-9xl leading-none font-thin-custom">“</div>
+               <p className="text-[10px] font-light-custom text-amber-600 uppercase tracking-[0.4em] mb-4 flex items-center">
                  <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
                  आज का विचार
                </p>
-               <p className="text-lg font-black text-amber-900 leading-tight italic relative z-10">
+               <p className="text-lg font-heavy-custom text-amber-900 leading-tight italic relative z-10">
                  {thoughtOfTheDay}
                </p>
-               <p className="text-[9px] font-bold text-amber-400 mt-6 uppercase tracking-widest text-right">— बाबासाहेब अंबेडकर</p>
+               <p className="text-[9px] font-light-custom text-amber-400 mt-6 uppercase tracking-widest text-right">— बाबासाहेब अंबेडकर</p>
             </div>
           </div>
         )}
@@ -140,12 +140,12 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
                    </button>
                  )}
-                 <h2 className="text-[10px] font-black text-indigo-900/50 uppercase tracking-[0.3em]">
+                 <h2 className="text-[10px] font-light-custom text-indigo-900/50 uppercase tracking-[0.3em]">
                    {selectedVillageId ? `${villages.find(v=>v.id===selectedVillageId)?.name} लिस्ट` : 'खोज परिणाम'} ({filteredList.length})
                  </h2>
                </div>
                {selectedVillageId && (
-                 <button onClick={() => window.print()} className="text-[10px] font-black text-white bg-indigo-600 px-5 py-2.5 rounded-full shadow-lg shadow-indigo-100 flex items-center space-x-2 active:scale-95 transition-all">
+                 <button onClick={() => window.print()} className="text-[10px] font-heavy-custom text-white bg-indigo-600 px-5 py-2.5 rounded-full shadow-lg shadow-indigo-100 flex items-center space-x-2 active:scale-95 transition-all">
                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                    <span>प्रिंट PDF</span>
                  </button>
@@ -155,13 +155,13 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredList.map((c) => (
                 <div key={c.id} className="item-card flex items-center group animate-slide-up">
-                  <div className="w-14 h-14 rounded-[1.5rem] bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-600 flex items-center justify-center font-black text-xl mr-5 border border-indigo-100 shadow-inner">
+                  <div className="w-14 h-14 rounded-[1.5rem] bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-600 flex items-center justify-center font-heavy-custom text-xl mr-5 border border-indigo-100 shadow-inner">
                     {c.name.charAt(0)}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-black text-indigo-950 text-base leading-tight">{c.name}</h4>
-                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">पिता: {c.fatherName}</p>
-                    <p className="text-purple-600 font-black text-sm mt-1 tracking-tight">{c.mobile}</p>
+                    <h4 className="font-heavy-custom text-indigo-950 text-base leading-tight">{c.name}</h4>
+                    <p className="text-[10px] font-light-custom text-slate-400 mt-1 uppercase">पिता: {c.fatherName}</p>
+                    <p className="text-purple-600 font-heavy-custom text-sm mt-1 tracking-tight">{c.mobile}</p>
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -173,9 +173,9 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
                     </button>
                     <a 
                       href={`tel:${c.mobile}`}
-                      className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-xl shadow-indigo-200 active:scale-90 transition-all"
+                      className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-xl shadow-indigo-100 active:scale-90 transition-all overflow-hidden"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1.01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1.01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                     </a>
                   </div>
                 </div>
@@ -191,8 +191,8 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
                </div>
              </div>
              <div>
-               <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-4">{UI_STRINGS.shortName}</p>
-               <p className="text-xs font-bold text-slate-500 max-w-[260px] mx-auto leading-loose bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 italic">
+               <p className="text-[10px] font-light-custom text-indigo-600 uppercase tracking-[0.4em] mb-4">{UI_STRINGS.shortName}</p>
+               <p className="text-xs font-light-custom text-slate-500 max-w-[260px] mx-auto leading-loose bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 italic">
                  वागड़ चौरासी यादव समाज की डिजिटल डायरी में आपका स्वागत है। अपना गाँव चुनें।
                </p>
              </div>
@@ -201,7 +201,7 @@ const Home: React.FC<HomeProps> = ({ villages, contacts, settings, logoUrl, user
       </main>
 
       <footer className="pb-16 text-center print:hidden opacity-40">
-        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.5em]">{UI_STRINGS.copyright}</p>
+        <p className="text-[8px] font-light-custom text-slate-400 uppercase tracking-[0.5em]">{UI_STRINGS.copyright}</p>
       </footer>
 
       <style>{`

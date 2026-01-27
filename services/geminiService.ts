@@ -8,6 +8,7 @@ export const updateServiceSettings = (settings: any) => {
 };
 
 async function callGroq(prompt: string, schema?: any) {
+  // Use Firebase stored key first
   const groqKey = cachedSettings?.aiKeySecondary;
   if (!groqKey) return null;
 
@@ -39,8 +40,11 @@ async function callGroq(prompt: string, schema?: any) {
 }
 
 export async function parseSmartIntent(query: string) {
-  // Fixed: Always use process.env.API_KEY directly for initializing GoogleGenAI as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Priority: Firebase Key > ENV Key
+  const activeKey = cachedSettings?.aiKeyPrimary || process.env.API_KEY;
+  if (!activeKey) return await callGroq(query, {});
+
+  const ai = new GoogleGenAI({ apiKey: activeKey });
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -55,10 +59,9 @@ export async function parseSmartIntent(query: string) {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `उपयोगकर्ता: "${query}". Intents: NAVIGATE_VILLAGE, SEARCH_CONTACT, NAVIGATE_HOME, HELP. केवल हिंदी में।`,
+      contents: `उपयोगकर्ता: "${query}". Intents: NAVIGATE_VILLAGE, SEARCH_CONTACT, NAVIGATE_HOME, HELP. केवल हिंदी में उत्तर दें।`,
       config: { responseMimeType: "application/json", responseSchema: schema as any },
     });
-    // Fixed: Use .text property directly as per extracting text guidelines
     return JSON.parse(response.text || '{}');
   } catch (error) {
     console.warn("Gemini Failed, switching to Groq...");
@@ -67,8 +70,8 @@ export async function parseSmartIntent(query: string) {
 }
 
 export async function parseVoiceQuery(query: string) {
-  // Fixed: Always use process.env.API_KEY directly for initializing GoogleGenAI as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const activeKey = cachedSettings?.aiKeyPrimary || process.env.API_KEY;
+  const ai = new GoogleGenAI({ apiKey: activeKey });
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -84,7 +87,6 @@ export async function parseVoiceQuery(query: string) {
       contents: `आवाज़ खोज: "${query}". गाँव, नाम या पेशा निकालें।`,
       config: { responseMimeType: "application/json", responseSchema: schema as any },
     });
-    // Fixed: Use .text property directly as per extracting text guidelines
     return JSON.parse(response.text || '{}');
   } catch (e) {
     console.warn("Gemini Voice Parse Failed, switching to Groq...");
@@ -93,8 +95,8 @@ export async function parseVoiceQuery(query: string) {
 }
 
 export async function speakText(text: string) {
-  // Fixed: Always use process.env.API_KEY directly for initializing GoogleGenAI as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const activeKey = cachedSettings?.aiKeyPrimary || process.env.API_KEY;
+  const ai = new GoogleGenAI({ apiKey: activeKey });
 
   try {
     const response = await ai.models.generateContent({
@@ -105,11 +107,9 @@ export async function speakText(text: string) {
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
       },
     });
-    // Fixed: Accessing audio data from response parts using .candidates property chain
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (base64Audio) await playRawAudio(base64Audio);
   } catch (error) {
-    // Fallback to browser SpeechSynthesis if Gemini TTS fails
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'hi-IN';
@@ -124,7 +124,6 @@ function decode(base64: string) {
   return bytes;
 }
 
-// Fixed: Custom Audio Decoding for raw PCM data as per SDK guidelines
 async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number) {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;

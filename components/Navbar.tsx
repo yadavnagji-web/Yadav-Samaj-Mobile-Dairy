@@ -8,10 +8,9 @@ interface NavbarProps {
   user: User | null;
   onLogout: () => void;
   onOpenMobileMenu?: () => void;
-  logoUrl: string;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ user, onLogout, onOpenMobileMenu, logoUrl }) => {
+const Navbar: React.FC<NavbarProps> = ({ user, onLogout, onOpenMobileMenu }) => {
   const location = useLocation();
   // Don't show generic Navbar on Home Page to preserve the aesthetic
   if (location.pathname === '/') return null;
@@ -19,9 +18,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout, onOpenMobileMenu, logoU
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white/10 backdrop-blur-md text-white shadow-xl z-40 h-14 flex items-center px-4 justify-between border-b border-white/10">
       <Link to="/" className="flex items-center space-x-2">
-        <div className="w-8 h-8 bg-white rounded-full overflow-hidden border border-amber-400">
-          <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-        </div>
         <span className="font-black text-xs uppercase tracking-widest">{UI_STRINGS.appName}</span>
       </Link>
       <div className="flex items-center space-x-3">

@@ -40,18 +40,21 @@ export interface Contact {
   isMarkedWrong?: boolean;
 }
 
+// Added Bulletin interface definition
 export interface Bulletin {
   id: string;
+  villageId: string;
   title: string;
   content: string;
-  isDeleted: boolean;
+  createdAt?: string;
 }
 
+// Added Banner interface definition
 export interface Banner {
   id: string;
+  villageId: string;
   imageUrl: string;
-  title?: string;
-  isDeleted: boolean;
+  createdAt?: string;
 }
 
 export interface AppSettings {
@@ -60,8 +63,7 @@ export interface AppSettings {
   templateId: string;
   messageId: string;
   otpMessage: string;
-  logoUrl: string; 
-  backgroundImageUrl?: string; // New: Persistent background
+  backgroundImageUrl?: string; 
   proxyUrl?: string;
   aiKeyPrimary: string;
   aiKeySecondary: string;

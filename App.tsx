@@ -75,10 +75,10 @@ const AppRoutes: React.FC<{
       
       <main className="w-full min-h-screen print:hidden relative z-10">
         <Routes>
-          <Route path="/" element={<Home villages={props.villages} contacts={props.contacts} settings={props.settings} logoUrl={props.settings.logoUrl} user={props.currentUser} onLogout={props.handleLogout} />} />
+          <Route path="/" element={<Home villages={props.villages} contacts={props.contacts} settings={props.settings} user={props.currentUser} onLogout={props.handleLogout} />} />
           <Route path="/village/:id" element={<VillageDetails villages={props.villages} contacts={props.contacts} bulletins={props.bulletins} banners={props.banners} fields={props.fields} externalSearch={globalSearch} setExternalSearch={setGlobalSearch} />} />
           <Route path="/login" element={<Login onLogin={props.handleLogin} settings={props.settings} />} />
-          <Route path="/help" element={<Help logoUrl={props.settings.logoUrl} />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/register" element={<SelfRegistration villages={props.villages} settings={props.settings} existingContacts={props.contacts} />} />
           
           <Route 
@@ -89,6 +89,7 @@ const AppRoutes: React.FC<{
                   villages={props.villages} setVillages={props.setVillages}
                   contacts={props.contacts} setContacts={props.setContacts}
                   settings={props.settings} setSettings={props.setSettings}
+                  onLogout={props.handleLogout}
                 />
               ) : (
                 <Navigate to="/login" replace />
@@ -146,7 +147,7 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      {showLaunch && <LaunchingPage onComplete={() => setShowLaunch(false)} logoUrl={settings.logoUrl} />}
+      {showLaunch && <LaunchingPage onComplete={() => setShowLaunch(false)} />}
       
       <div className={`min-h-screen ${showLaunch ? 'hidden' : 'block'}`}>
         <AppRoutes 

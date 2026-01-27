@@ -2,19 +2,12 @@
 import React from 'react';
 import { UI_STRINGS } from '../constants';
 
-interface HelpProps {
-  logoUrl: string;
-}
-
-const Help: React.FC<HelpProps> = ({ logoUrl }) => {
+const Help: React.FC = () => {
   const downloadPDFGuide = () => window.print();
   return (
     <div className="space-y-8 pb-20 print:p-0">
       <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-indigo-50 flex flex-col md:flex-row md:items-center justify-between print:hidden">
         <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 bg-white rounded-full overflow-hidden border-2 border-amber-400 flex-shrink-0 shadow-md">
-            <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-          </div>
           <div>
             <h1 className="text-3xl font-black text-indigo-900 tracking-tight">उपयोग सहायता</h1>
             <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">{UI_STRINGS.appName} Manual</p>

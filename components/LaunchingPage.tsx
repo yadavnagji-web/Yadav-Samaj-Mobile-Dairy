@@ -5,10 +5,9 @@ import { UI_STRINGS } from '../constants';
 
 interface LaunchingPageProps {
   onComplete: () => void;
-  logoUrl: string;
 }
 
-const LaunchingPage: React.FC<LaunchingPageProps> = ({ onComplete, logoUrl }) => {
+const LaunchingPage: React.FC<LaunchingPageProps> = ({ onComplete }) => {
   const [fade, setFade] = useState(false);
   const [info, setInfo] = useState<any>(null);
 
@@ -45,20 +44,14 @@ const LaunchingPage: React.FC<LaunchingPageProps> = ({ onComplete, logoUrl }) =>
         </div>
       </div>
 
-      {/* Center Section - Logo & Name */}
+      {/* Center Section - Branding Name only */}
       <div className="flex-1 flex flex-col items-center justify-center px-10 relative z-10">
-        <div className="relative group">
-          <div className="w-56 h-56 bg-white/20 rounded-full absolute inset-0 animate-ping -m-6 opacity-30"></div>
-          <div className="relative w-40 h-40 bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.3)] p-6 animate-pop-in border-8 border-white/10 flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-500">
-            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
-          </div>
-        </div>
-        
-        <div className="mt-12 text-center">
-          <h2 className="text-3xl font-black text-white drop-shadow-2xl tracking-tight uppercase leading-none">
+        <div className="text-center animate-pop-in">
+          <h2 className="text-4xl font-black text-white drop-shadow-2xl tracking-tight uppercase leading-none">
             {UI_STRINGS.shortName}
           </h2>
-          <div className="mt-4 inline-block bg-amber-400 text-indigo-900 px-6 py-2 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] shadow-xl">
+          <p className="text-white/60 text-[10px] mt-2 font-light tracking-[0.3em] uppercase">{UI_STRINGS.appName}</p>
+          <div className="mt-8 inline-block bg-amber-400 text-indigo-900 px-6 py-2 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] shadow-xl">
             डिजिटल मोबाइल डायरी
           </div>
         </div>

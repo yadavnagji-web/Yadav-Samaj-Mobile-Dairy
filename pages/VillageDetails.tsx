@@ -1,12 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Village, Contact, DynamicField } from '../types';
+// Fixed: Added missing Bulletin and Banner to imports
+import { Village, Contact, DynamicField, Bulletin, Banner } from '../types';
 
 interface VillageDetailsProps {
   villages: Village[];
   contacts: Contact[];
   fields: DynamicField[];
+  // Fixed: Added missing bulletins and banners properties to the interface
+  bulletins: Bulletin[];
+  banners: Banner[];
   externalSearch?: string;
   setExternalSearch?: (val: string) => void;
 }
@@ -14,7 +18,12 @@ interface VillageDetailsProps {
 const VillageDetails: React.FC<VillageDetailsProps> = ({ 
   villages, 
   contacts, 
-  externalSearch 
+  // Destructured additional props to align with the interface and usage in App.tsx
+  fields,
+  bulletins,
+  banners,
+  externalSearch,
+  setExternalSearch 
 }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -94,6 +103,7 @@ const VillageDetails: React.FC<VillageDetailsProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <button 
+                // Fix: Changing 'contact' to 'c' to match the variable in the map function
                 onClick={() => handleShare(c)}
                 className="w-11 h-11 bg-white/40 rounded-[1.25rem] flex items-center justify-center text-slate-400 hover:text-green-500 transition-colors active:scale-90"
               >

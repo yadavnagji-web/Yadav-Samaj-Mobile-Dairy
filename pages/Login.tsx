@@ -63,9 +63,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, settings }) => {
         </button>
 
         <div className="text-center mb-12 mt-6 relative z-10">
-          <div className="w-24 h-24 bg-white rounded-3xl shadow-xl border border-slate-50 p-4 mx-auto mb-8 flex items-center justify-center transform hover:rotate-6 transition-transform">
-            <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-          </div>
           <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none uppercase">
             Admin Panel
           </h2>

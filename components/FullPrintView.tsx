@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Contact, Village } from '../types';
-import { UI_STRINGS, BRAND_LOGO_URL } from '../constants';
+import { UI_STRINGS } from '../constants';
 
 interface FullPrintViewProps {
   contacts: Contact[];
@@ -32,9 +32,6 @@ const FullPrintView: React.FC<FullPrintViewProps> = ({ contacts, villages }) => 
     <div className="hidden print:block bg-white text-slate-900 p-0">
       {/* Cover Page */}
       <div className="min-h-screen flex flex-col items-center justify-center p-20 text-center border-8 border-indigo-900 m-8 break-after-page">
-        <div className="w-64 h-64 mb-16 border-4 border-indigo-900 p-8 rounded-full flex items-center justify-center">
-           <img src={BRAND_LOGO_URL} className="w-full h-full object-contain grayscale" alt="Logo" />
-        </div>
         <h1 className="text-6xl font-black mb-8 leading-tight">{UI_STRINGS.appName}</h1>
         <div className="h-2 bg-indigo-900 w-64 mx-auto mb-12"></div>
         <p className="text-3xl font-black text-slate-500 uppercase tracking-[0.5em] mb-16">{UI_STRINGS.shortName}</p>

@@ -7,9 +7,14 @@ import {
   push, 
   set, 
   update, 
-  remove,
-  child
+  remove
 } from "firebase/database";
+import { 
+  getStorage, 
+  ref as sRef, 
+  uploadBytesResumable, 
+  getDownloadURL 
+} from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBkJ2cREq0L10oWQ5nlksl29CbMzPaEBIs",
@@ -25,8 +30,41 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
 
-export { db };
+export { db, storage };
+
+/**
+ * Uploads a file to Firebase Storage and returns the download URL.
+ * Provides a callback for progress tracking.
+ */
+export const uploadFileToStorage = (
+  file: File, 
+  path: string, 
+  onProgress: (percent: number) => void
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const storageRef = sRef(storage, `${path}/${Date.now()}_${file.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        onProgress(progress);
+      },
+      (error) => {
+        console.error("Storage Upload Error:", error);
+        reject(error);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          resolve(downloadURL);
+        });
+      }
+    );
+  });
+};
 
 /**
  * Real-time synchronization helper for RTD.
@@ -37,7 +75,6 @@ export const syncCollection = (path: string, callback: (data: any[]) => void, on
   return onValue(dbRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      // RTD returns an object of objects, convert to array with IDs
       const list = Object.keys(data).map(key => ({
         id: key,
         ...data[key]
@@ -55,9 +92,6 @@ export const syncCollection = (path: string, callback: (data: any[]) => void, on
   });
 };
 
-/**
- * Adds a record to a path.
- */
 export const addToCloud = async (path: string, data: any) => {
   try {
     const dbRef = ref(db, path);
@@ -74,9 +108,6 @@ export const addToCloud = async (path: string, data: any) => {
   }
 };
 
-/**
- * Updates a specific record in a path.
- */
 export const updateInCloud = async (path: string, id: string, data: any) => {
   try {
     const dbRef = ref(db, `${path}/${id}`);
@@ -88,9 +119,6 @@ export const updateInCloud = async (path: string, id: string, data: any) => {
   }
 };
 
-/**
- * Deletes a record from a path.
- */
 export const deleteFromCloud = async (path: string, id: string) => {
   try {
     const dbRef = ref(db, `${path}/${id}`);
@@ -101,9 +129,6 @@ export const deleteFromCloud = async (path: string, id: string) => {
   }
 };
 
-/**
- * Specifically saves app settings.
- */
 export const saveSettingsToCloud = async (settings: any) => {
   try {
     const dbRef = ref(db, "app_settings/global");

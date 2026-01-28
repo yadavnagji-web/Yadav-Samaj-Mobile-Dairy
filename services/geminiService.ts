@@ -1,50 +1,16 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-// Cache for settings to avoid prop drilling in simple services
-let cachedSettings: any = null;
-export const updateServiceSettings = (settings: any) => {
-  cachedSettings = settings;
-};
+// Use process.env.API_KEY exclusively as per guidelines.
+// Assume it is pre-configured and accessible.
+// Always use the apiKey parameter directly from process.env.API_KEY.
+const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-async function callGroq(prompt: string, schema?: any) {
-  // Use Firebase stored key first
-  const groqKey = cachedSettings?.aiKeySecondary;
-  if (!groqKey) return null;
-
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${groqKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { 
-            role: "system", 
-            content: `You are a helpful assistant for BHIM Mobile Dairy. Always respond in JSON format matching this schema: ${JSON.stringify(schema)}. Output MUST be valid JSON only.`
-          },
-          { role: "user", content: prompt }
-        ],
-        response_format: { type: "json_object" }
-      })
-    });
-    const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
-  } catch (e) {
-    console.error("Groq Fallback Failed", e);
-    return null;
-  }
-}
-
-export async function parseSmartIntent(query: string) {
-  // Priority: Firebase Key > ENV Key
-  const activeKey = cachedSettings?.aiKeyPrimary || process.env.API_KEY;
-  if (!activeKey) return await callGroq(query, {});
-
-  const ai = new GoogleGenAI({ apiKey: activeKey });
+/**
+ * Parses user natural language query into specific application intents.
+ */
+export async function parseSmartIntent(query: string, customSystemInstruction?: string) {
+  const ai = getAI();
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -56,22 +22,31 @@ export async function parseSmartIntent(query: string) {
     required: ["intent", "message"]
   };
 
+  const systemInstruction = customSystemInstruction || "You are BHIM, an AI intent parser for Yadav Samaj directory. Extract intent from Hindi query. Intents: NAVIGATE_VILLAGE, SEARCH_CONTACT, NAVIGATE_HOME, HELP. केवल हिंदी में उत्तर दें।";
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `उपयोगकर्ता: "${query}". Intents: NAVIGATE_VILLAGE, SEARCH_CONTACT, NAVIGATE_HOME, HELP. केवल हिंदी में उत्तर दें।`,
-      config: { responseMimeType: "application/json", responseSchema: schema as any },
+      contents: `उपयोगकर्ता: "${query}"`,
+      config: { 
+        systemInstruction,
+        responseMimeType: "application/json", 
+        responseSchema: schema 
+      },
     });
+    // Accessing .text as a property as per guidelines.
     return JSON.parse(response.text || '{}');
   } catch (error) {
-    console.warn("Gemini Failed, switching to Groq...");
-    return await callGroq(query, schema);
+    console.error("Gemini Intent Parse Failed", error);
+    return null;
   }
 }
 
+/**
+ * Extract entities from voice query for contact search.
+ */
 export async function parseVoiceQuery(query: string) {
-  const activeKey = cachedSettings?.aiKeyPrimary || process.env.API_KEY;
-  const ai = new GoogleGenAI({ apiKey: activeKey });
+  const ai = getAI();
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -85,18 +60,23 @@ export async function parseVoiceQuery(query: string) {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `आवाज़ खोज: "${query}". गाँव, नाम या पेशा निकालें।`,
-      config: { responseMimeType: "application/json", responseSchema: schema as any },
+      config: { 
+        responseMimeType: "application/json", 
+        responseSchema: schema 
+      },
     });
     return JSON.parse(response.text || '{}');
   } catch (e) {
-    console.warn("Gemini Voice Parse Failed, switching to Groq...");
-    return await callGroq(query, schema);
+    console.error("Gemini Voice Parse Failed", e);
+    return null;
   }
 }
 
+/**
+ * Converts text to speech using Gemini TTS model.
+ */
 export async function speakText(text: string) {
-  const activeKey = cachedSettings?.aiKeyPrimary || process.env.API_KEY;
-  const ai = new GoogleGenAI({ apiKey: activeKey });
+  const ai = getAI();
 
   try {
     const response = await ai.models.generateContent({
@@ -104,12 +84,21 @@ export async function speakText(text: string) {
       contents: [{ parts: [{ text: `बोलें: ${text}` }] }],
       config: {
         responseModalities: [Modality.AUDIO],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+        speechConfig: { 
+          voiceConfig: { 
+            prebuiltVoiceConfig: { voiceName: 'Kore' } 
+          } 
+        },
       },
     });
+    
+    // Extract base64 audio data from the first candidate's first part.
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (base64Audio) await playRawAudio(base64Audio);
+    if (base64Audio) {
+      await playRawAudio(base64Audio);
+    }
   } catch (error) {
+    console.error("Gemini TTS Failed, falling back to browser synthesis", error);
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'hi-IN';
@@ -117,24 +106,44 @@ export async function speakText(text: string) {
   }
 }
 
+/**
+ * Standard base64 decoding function as per SDK examples.
+ */
 function decode(base64: string) {
   const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
   return bytes;
 }
 
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number) {
+/**
+ * Decodes raw PCM audio bytes into an AudioBuffer.
+ */
+async function decodeAudioData(
+  data: Uint8Array, 
+  ctx: AudioContext, 
+  sampleRate: number, 
+  numChannels: number
+): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
   }
   return buffer;
 }
 
+/**
+ * Plays raw audio data using Web Audio API.
+ */
 async function playRawAudio(base64: string) {
   const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
   const audioBuffer = await decodeAudioData(decode(base64), ctx, 24000, 1);

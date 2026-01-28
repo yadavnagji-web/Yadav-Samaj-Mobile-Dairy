@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { parseVoiceQuery } from '../services/geminiService';
 
@@ -23,14 +24,9 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ onResult }) => {
         setTranscript(text);
         setIsListening(false);
         
-        // Only try AI parsing if Key exists
-        if (process.env.API_KEY) {
-          const parsed = await parseVoiceQuery(text);
-          onResult(parsed, text);
-        } else {
-          // Fallback to text directly
-          onResult(null, text);
-        }
+        // Use Gemini Service instead of Groq
+        const parsed = await parseVoiceQuery(text);
+        onResult(parsed, text);
       };
 
       recognitionRef.current.onerror = (event: any) => {
@@ -56,16 +52,16 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ onResult }) => {
       <button
         onClick={toggleListening}
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-95 ${
-          isListening ? 'bg-red-500 animate-pulse' : 'bg-blue-600 hover:bg-blue-700'
+          isListening ? 'bg-red-500 animate-pulse' : 'bg-black hover:bg-slate-800'
         }`}
       >
         <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
         </svg>
       </button>
-      {isListening && <p className="mt-2 text-red-600 font-medium animate-bounce text-sm">सुन रहा हूँ... बोलिये</p>}
+      {isListening && <p className="mt-2 text-red-600 font-bold animate-bounce text-[10px] uppercase">सुन रहा हूँ...</p>}
       {transcript && !isListening && (
-        <p className="mt-2 text-slate-600 italic text-sm">आपने कहा: "{transcript}"</p>
+        <p className="mt-2 text-slate-500 italic text-[10px] font-bold">आपने कहा: "{transcript}"</p>
       )}
     </div>
   );

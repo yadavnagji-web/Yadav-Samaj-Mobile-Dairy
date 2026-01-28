@@ -40,7 +40,6 @@ export interface Contact {
   isMarkedWrong?: boolean;
 }
 
-// Added Bulletin interface definition
 export interface Bulletin {
   id: string;
   villageId: string;
@@ -49,7 +48,6 @@ export interface Bulletin {
   createdAt?: string;
 }
 
-// Added Banner interface definition
 export interface Banner {
   id: string;
   villageId: string;
@@ -59,14 +57,16 @@ export interface Banner {
 
 export interface AppSettings {
   whatsappApiKey: string;
-  senderMobile: string;
+  senderMobile: string; 
   templateId: string;
   messageId: string;
   otpMessage: string;
   backgroundImageUrl?: string; 
   proxyUrl?: string;
-  aiKeyPrimary: string;
-  aiKeySecondary: string;
+  aiProvider?: 'gemini' | 'groq';
+  aiSystemPrompt?: string;
+  groqApiKey?: string;
+  adminAlertMessage?: string; // New field for admin announcements
 }
 
 export interface User {

@@ -5,73 +5,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>यादव समाज वागड़ चौरासी - डिजिटल मोबाइल डायरी</title>
-    <meta name="description" content="अत्यंत शक्तिशाली AI-Based मोबाइल डायरी - यादव समाज वागड़ चौरासी">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;600;800;900&family=Noto+Sans+Devanagari:wght@100..900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Hind:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
       
       :root {
-        --primary: #6366f1; 
-        --secondary: #a855f7; 
-        --accent: #f59e0b;  
-        --bg: #fdfeff;
-        --card: rgba(255, 255, 255, 0.95);
-        --text-dark: #1e1b4b;
+        --primary-blue: #4F46E5;
+        --primary-purple: #7C3AED;
+        --accent-pink: #EC4899;
+        --bg-soft: #F9FAFB;
+        --text-primary: #111827;
+        --text-secondary: #6B7280;
+        --gradient: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
       }
 
       body {
-        font-family: 'Outfit', 'Noto Sans Devanagari', sans-serif;
-        background-color: var(--bg);
-        color: var(--text-dark);
+        font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+        background-color: var(--bg-soft);
+        color: var(--text-primary);
         margin: 0;
+        overflow-x: hidden;
         -webkit-tap-highlight-color: transparent;
-        font-weight: 400;
       }
 
-      .font-thin-custom { font-weight: 100; }
-      .font-light-custom { font-weight: 300; }
-      .font-heavy-custom { font-weight: 900; }
-
-      .premium-header {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
-        border-bottom-left-radius: 3.5rem;
-        border-bottom-right-radius: 3.5rem;
-        box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.3);
+      h1, h2, h3, h4, .font-heading {
+        font-family: 'Poppins', 'Hind', sans-serif;
+        font-weight: 700;
       }
 
-      .item-card {
-        background: var(--card);
-        backdrop-blur: 15px;
-        border-radius: 2.5rem;
-        padding: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.1);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      .premium-header-gradient {
+        background: var(--gradient);
+        border-bottom-left-radius: 24px;
+        border-bottom-right-radius: 24px;
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.2);
       }
 
-      .vibrant-gradient {
-        background: linear-gradient(to right, #6366f1, #a855f7);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      .search-pill {
+        border-radius: 9999px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid #E5E7EB;
+      }
+
+      .village-selector {
+        position: relative;
+        background: white;
+        border-radius: 16px;
+        padding: 2px;
+        background-clip: padding-box;
+      }
+      .village-selector::before {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; bottom: 0; left: 0;
+        z-index: -1;
+        margin: -1px;
+        border-radius: inherit;
+        background: var(--gradient);
+      }
+
+      .btn-gradient {
+        background: var(--gradient);
+        color: white;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.025em;
+      }
+      .btn-gradient:active { transform: scale(0.96); filter: brightness(1.1); }
+
+      .card-premium {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+      }
+
+      .pulse-mic {
+        animation: pulse-blue 2s infinite;
+      }
+      @keyframes pulse-blue {
+        0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+        70% { box-shadow: 0 0 0 15px rgba(79, 70, 229, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
       }
 
       @media print {
-        .no-print { display: none !important; }
-        .item-card { border: 1px solid #ddd; shadow: none; break-inside: avoid; }
+        .no-print, header, footer, button, .fixed { display: none !important; }
+        body { background: white !important; }
+        .print-container { display: block !important; }
       }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
     "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.1",
     "xlsx": "https://esm.sh/xlsx@^0.18.5"
   }
 }

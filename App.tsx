@@ -19,7 +19,8 @@ import Admin from './pages/Admin';
 import VillageDetails from './pages/VillageDetails';
 import Help from './pages/Help';
 import SelfRegistration from './pages/SelfRegistration';
-import LaunchingPage from './components/LaunchingPage';
+import UpdateNumber from './pages/UpdateNumber';
+import DeleteNumber from './pages/DeleteNumber';
 
 const AppRoutes: React.FC<{
   villages: Village[];
@@ -73,9 +74,10 @@ const AppRoutes: React.FC<{
     <div style={bgStyle} className="min-h-screen transition-all duration-700">
       <SmartAssistant onAction={handleAIAction} />
       
-      {/* Print Views (Hidden on screen) */}
-      <FullPrintView contacts={props.contacts} villages={props.villages} />
-      <VillageQRPrintView villages={props.villages} />
+      <div className="print-container hidden print:block">
+        <FullPrintView contacts={props.contacts} villages={props.villages} />
+        <VillageQRPrintView villages={props.villages} />
+      </div>
       
       <main className="w-full min-h-screen print:hidden relative z-10">
         <Routes>
@@ -84,6 +86,8 @@ const AppRoutes: React.FC<{
           <Route path="/login" element={<Login onLogin={props.handleLogin} settings={props.settings} />} />
           <Route path="/help" element={<Help />} />
           <Route path="/register" element={<SelfRegistration villages={props.villages} settings={props.settings} existingContacts={props.contacts} />} />
+          <Route path="/update-number" element={<UpdateNumber villages={props.villages} settings={props.settings} existingContacts={props.contacts} />} />
+          <Route path="/delete-number" element={<DeleteNumber settings={props.settings} existingContacts={props.contacts} />} />
           
           <Route 
             path="/admin/*" 
@@ -107,7 +111,6 @@ const AppRoutes: React.FC<{
 };
 
 const App: React.FC = () => {
-  const [showLaunch, setShowLaunch] = useState(true);
   const [villages, setVillages] = useState<Village[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [fields, setFields] = useState<DynamicField[]>([]);
@@ -117,7 +120,8 @@ const App: React.FC = () => {
   
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = sessionStorage.getItem('bhim_user');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    try { return JSON.parse(saved); } catch { return null; }
   });
 
   useEffect(() => {
@@ -151,21 +155,17 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      {showLaunch && <LaunchingPage onComplete={() => setShowLaunch(false)} />}
-      
-      <div className={`min-h-screen ${showLaunch ? 'hidden' : 'block'}`}>
-        <AppRoutes 
-          villages={villages} setVillages={setVillages}
-          contacts={contacts} setContacts={setContacts}
-          fields={fields} setFields={setFields}
-          bulletins={bulletins} setBulletins={setBulletins}
-          banners={banners} setBanners={setBanners}
-          settings={settings} setSettings={setSettings}
-          currentUser={currentUser}
-          handleLogin={handleLogin}
-          handleLogout={handleLogout}
-        />
-      </div>
+      <AppRoutes 
+        villages={villages} setVillages={setVillages}
+        contacts={contacts} setContacts={setContacts}
+        fields={fields} setFields={setFields}
+        bulletins={bulletins} setBulletins={setBulletins}
+        banners={banners} setBanners={setBanners}
+        settings={settings} setSettings={setSettings}
+        currentUser={currentUser}
+        handleLogin={handleLogin}
+        handleLogout={handleLogout}
+      />
     </HashRouter>
   );
 };

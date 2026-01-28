@@ -1,8 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Village, Contact, AppSettings } from '../types';
-import { UI_STRINGS, DAILY_THOUGHTS } from '../constants';
+import { UI_STRINGS, AMBEDKAR_THOUGHTS } from '../constants';
+import { getHindiDateInfo } from '../utils/hindiCalendar';
 import MobileDrawer from '../components/MobileDrawer';
 
 interface HomeProps {
@@ -13,147 +14,277 @@ interface HomeProps {
   onLogout: any;
 }
 
-const Home: React.FC<HomeProps> = ({ villages, contacts, settings, user, onLogout }) => {
+const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, user, onLogout }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selectedVillageId, setSelectedVillageId] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [panchangInfo, setPanchangInfo] = useState<any>(null);
+  const [thought, setThought] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [installSuccess, setInstallSuccess] = useState(false);
 
-  const filteredList = useMemo(() => {
-    let list = (contacts || []).filter(c => !c.isDeleted);
-    if (selectedVillageId) list = list.filter(c => c.villageId === selectedVillageId);
-    if (search) {
-      const s = search.toLowerCase();
-      list = list.filter(c => 
-        c.name.toLowerCase().includes(s) || 
-        c.mobile.includes(s) || 
-        c.fatherName?.toLowerCase().includes(s)
-      );
+  useEffect(() => {
+    setPanchangInfo(getHindiDateInfo());
+    const day = new Date().getDate();
+    if (AMBEDKAR_THOUGHTS && AMBEDKAR_THOUGHTS.length > 0) {
+      setThought(AMBEDKAR_THOUGHTS[day % AMBEDKAR_THOUGHTS.length]);
     }
-    return list.sort((a, b) => a.name.localeCompare(b.name, 'hi'));
-  }, [contacts, search, selectedVillageId]);
 
-  const handleShare = (contact: Contact) => {
-    const villageName = villages.find(v => v.id === contact.villageId)?.name || 'अज्ञात';
-    const shareText = `*${UI_STRINGS.appName}*\n\n👤 नाम: ${contact.name}\n👴 पिता: ${contact.fatherName}\n📞 मोबाइल: ${contact.mobile}\n🏘️ गाँव: ${villageName}`;
+    // PWA Install Prompt Listener
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setInstallSuccess(true);
+      setTimeout(() => setInstallSuccess(false), 5000);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        // The appinstalled event will trigger the success message
+      }
+    } else {
+      // Check if already in standalone mode
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+      if (isStandalone) {
+        alert("यह ऐप पहले से ही आपके मोबाइल में इंस्टॉल है! आप इसे होम स्क्रीन से खोल सकते हैं।");
+      } else {
+        alert("आपका ब्राउज़र डायरेक्ट इंस्टॉलेशन सपोर्ट नहीं करता। कृपया ब्राउज़र मेनू में 'Add to Home Screen' विकल्प चुनें।");
+      }
+    }
+  };
+
+  const handleShareApp = () => {
+    const shareText = `*${UI_STRINGS.appName}*\n\nयादव समाज की अपनी डिजिटल डायरी अपने मोबाइल में इंस्टॉल करें और समाज से जुड़ें।\n\nयहाँ क्लिक करें: ${window.location.origin}`;
     if (navigator.share) {
-      navigator.share({ title: 'सदस्य विवरण', text: shareText }).catch(() => {
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
-      });
+      navigator.share({ title: UI_STRINGS.appName, text: shareText, url: window.location.origin });
     } else {
       window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
     }
   };
 
-  const getVillageQR = (vId: string) => {
-    const villageUrl = `${window.location.origin}/#/village/${vId}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(villageUrl)}&bgcolor=ffffff&color=4f46e5&margin=10`;
+  const filteredList = useMemo(() => {
+    if (!Array.isArray(contacts)) return [];
+    let list = contacts.filter(c => !c.isDeleted);
+    if (selectedVillageId) list = list.filter(c => c.villageId === selectedVillageId);
+    if (search) {
+      const s = search.toLowerCase();
+      list = list.filter(c => 
+        (c.name && c.name.toLowerCase().includes(s)) || 
+        (c.mobile && c.mobile.includes(s)) || 
+        (c.fatherName && c.fatherName.toLowerCase().includes(s))
+      );
+    }
+    return list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'hi'));
+  }, [contacts, search, selectedVillageId]);
+
+  const handleShareContact = (contact: Contact) => {
+    const villageName = villages.find(v => v.id === contact.villageId)?.name || 'अज्ञात';
+    const shareText = `*${UI_STRINGS.appName}*\n\n👤 नाम: ${contact.name}\n👵 पिता/पति: ${contact.fatherName}\n📞 मोबाइल: ${contact.mobile}\n🏘️ गाँव: ${villageName}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
-  const selectedVillage = villages.find(v => v.id === selectedVillageId);
+  const showResults = !!(selectedVillageId || search);
 
   return (
-    <div className="flex flex-col min-h-screen bg-transparent print:bg-white">
-      <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} onLogout={onLogout} villages={villages} contacts={contacts} />
+    <div className="flex flex-col min-h-screen bg-[#F9FAFB] relative overflow-hidden pb-24">
+      <MobileDrawer 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)} 
+        user={user} 
+        onLogout={onLogout} 
+        villages={villages} 
+        contacts={contacts} 
+      />
 
-      <header className="premium-header sticky top-0 z-50 pt-6 px-4 pb-10 print:hidden">
-        <div className="flex items-start justify-between mb-6 gap-3">
-          <div className="flex items-start space-x-3">
-             <button onClick={() => setIsDrawerOpen(true)} className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-lg border border-white/30 flex items-center justify-center text-white active:scale-90 shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 6h16M4 12h16M4 18h16" /></svg>
-             </button>
-             <div>
-               <h1 className="text-sm font-heavy-custom text-white tracking-tight leading-tight uppercase max-w-[180px]">
-                 {UI_STRINGS.shortName}
-               </h1>
-               <p className="text-[8px] text-indigo-100 font-light-custom uppercase tracking-widest mt-1 opacity-80 border-l-2 border-amber-400 pl-2">
-                 {UI_STRINGS.tagline}
-               </p>
-             </div>
+      {/* Success Toast */}
+      {installSuccess && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10000] w-[90%] max-w-sm animate-bounce">
+          <div className="bg-emerald-600 text-white p-5 rounded-[2rem] shadow-2xl flex items-center space-x-4 border-2 border-white">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">✅</div>
+            <p className="text-xs font-bold leading-tight">बधाई हो! 'BHIM Diary' ऐप सफलतापूर्वक इंस्टॉल हो गया है। अब आप इसे होम स्क्रीन से चला सकते हैं।</p>
           </div>
-          <Link to="/login" className="w-10 h-10 bg-white rounded-xl border border-white/40 text-indigo-600 shadow-xl flex items-center justify-center shrink-0 active:scale-90">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          </Link>
+        </div>
+      )}
+
+      <header className="premium-header-gradient pt-8 pb-12 px-6 print:hidden h-[180px] flex flex-col justify-between">
+        <div className="flex items-center justify-between">
+          <button onClick={() => setIsDrawerOpen(true)} className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white active:scale-95 transition-all">
+             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <div className="text-center">
+            <h1 className="text-lg font-bold text-white tracking-tight leading-tight">{UI_STRINGS.appName}</h1>
+            <p className="text-[9px] text-indigo-100 font-medium uppercase tracking-[0.2em] mt-1 opacity-90">{UI_STRINGS.tagline}</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button onClick={handleShareApp} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-white/95 shadow-xl h-12 rounded-full flex items-center px-5">
-            <svg className="w-4 h-4 text-indigo-400 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input type="text" placeholder="नाम या मोबाइल से खोजें..." className="flex-1 outline-none text-xs font-light-custom text-slate-700 bg-transparent placeholder-slate-400" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-
-          <div className="relative">
-            <select className="w-full bg-white/20 backdrop-blur-lg border border-white/30 p-4 rounded-full text-white font-heavy-custom text-xs outline-none appearance-none px-6" value={selectedVillageId} onChange={(e) => setSelectedVillageId(e.target.value)}>
-              <option value="" className="text-slate-800">--- अपना गाँव चुनें ---</option>
-              {villages.filter(v => !v.isDeleted).sort((a,b)=>a.name.localeCompare(b.name,'hi')).map(v => (
-                <option key={v.id} value={v.id} className="text-slate-800">{v.name}</option>
-              ))}
-            </select>
-            <div className="absolute right-6 top-4 pointer-events-none text-white/70">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
-            </div>
+        <div className="mt-8 -mb-16 relative z-[60]">
+          <div className="search-pill bg-white h-14 flex items-center px-6 transition-all focus-within:ring-4 ring-indigo-500/10">
+            <svg className="w-5 h-5 text-indigo-400 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input 
+              type="text" 
+              placeholder="नाम या मोबाइल से खोजें..." 
+              className="flex-1 outline-none text-sm font-semibold text-gray-800 bg-transparent placeholder-gray-400" 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+            />
           </div>
         </div>
       </header>
 
-      <main className="flex-1 p-4 pb-24 print:hidden">
-        {(selectedVillageId || search) ? (
-          <div className="space-y-4">
-            {/* Show Village QR Only if a village is selected */}
-            {selectedVillage && (
-              <div className="bg-white/90 backdrop-blur-md p-6 rounded-[3rem] border border-white/50 shadow-lg flex flex-col items-center animate-slide-up mb-6">
-                <div className="w-32 h-32 bg-indigo-50 rounded-[2rem] p-3 border border-indigo-100 shadow-inner">
-                  <img src={getVillageQR(selectedVillage.id)} alt={selectedVillage.name} className="w-full h-full object-contain rounded-xl" />
+      <main className="flex-1 p-6 mt-12">
+        <div className="mb-6 flex space-x-2">
+          <div className="village-selector relative flex-1">
+             <select 
+               className="w-full bg-white p-4 rounded-2xl text-gray-700 font-bold text-sm outline-none appearance-none cursor-pointer pr-10 border border-gray-100 shadow-sm" 
+               value={selectedVillageId} 
+               onChange={(e) => setSelectedVillageId(e.target.value)}
+             >
+               <option value="">— अपना गाँव चुनें —</option>
+               {villages && villages.filter(v => !v.isDeleted).sort((a,b)=>a.name.localeCompare(b.name,'hi')).map(v => (
+                 <option key={v.id} value={v.id}>{v.name}</option>
+               ))}
+             </select>
+             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+             </div>
+          </div>
+          <button 
+            onClick={handleInstallApp} 
+            className="px-5 bg-black text-white rounded-2xl font-bold text-[10px] uppercase shadow-lg active:scale-95 transition-all"
+          >
+            Install App
+          </button>
+        </div>
+
+        {!showResults && (
+          <div className="mb-8 animate-fade-in px-1 space-y-4">
+            <div className="bg-white/80 backdrop-blur-lg border border-white p-6 rounded-[2.25rem] shadow-sm text-center relative overflow-hidden">
+               <p className="text-[8px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2">आज का विचार</p>
+               <p className="text-sm font-bold text-gray-800 leading-relaxed italic px-4">"{thought}"</p>
+               <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mt-3">— डॉ. बी.आर. अंबेडकर</p>
+            </div>
+
+            {panchangInfo && (
+              <div className="space-y-2">
+                <div className="flex space-x-2">
+                  <div className="flex-1 bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                    <span className="text-[7px] font-black text-gray-300 uppercase tracking-widest block mb-1">दिनांक</span>
+                    <span className="text-[11px] font-bold text-gray-800">{panchangInfo.dinank}</span>
+                  </div>
+                  <div className="flex-1 bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                    <span className="text-[7px] font-black text-gray-300 uppercase tracking-widest block mb-1">वार</span>
+                    <span className="text-[11px] font-bold text-gray-800">{panchangInfo.vaar}</span>
+                  </div>
                 </div>
-                <h3 className="text-sm font-heavy-custom text-indigo-950 mt-4">{selectedVillage.name} गाँव की डिजिटल डायरी</h3>
-                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mt-1">स्कैन करके सीधे इस गाँव पर आएँ</p>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                    <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">माह</p>
+                    <p className="text-[10px] font-bold text-gray-800">{panchangInfo.mahina}</p>
+                  </div>
+                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                    <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">पक्ष</p>
+                    <p className="text-[10px] font-bold text-gray-800">{panchangInfo.paksh}</p>
+                  </div>
+                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                    <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">तिथि</p>
+                    <p className="text-[10px] font-bold text-gray-800">{panchangInfo.tithi}</p>
+                  </div>
+                </div>
               </div>
             )}
 
-            <div className="flex items-center justify-between px-2 mb-2">
-              <h2 className="text-[9px] font-light-custom text-indigo-900/40 uppercase tracking-[0.3em]">खोज परिणाम ({filteredList.length})</h2>
-              <div className="h-px bg-slate-100 flex-1 ml-4"></div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {filteredList.map((c) => (
-                <div key={c.id} className="item-card flex items-center p-4 bg-white/90 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-heavy-custom text-lg mr-4 border border-indigo-50">
-                    {c.name.charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-heavy-custom text-indigo-950 text-sm leading-tight">{c.name}</h4>
-                    <p className="text-[9px] font-light-custom text-slate-400 uppercase mt-0.5">पिता: {c.fatherName}</p>
-                    <p className="text-purple-600 font-heavy-custom text-xs mt-1">{c.mobile}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button onClick={() => handleShare(c)} className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:text-green-500 active:scale-90">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                    </button>
-                    <a href={`tel:${c.mobile}`} className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white active:scale-90 shadow-lg p-2">
-                      <svg className="w-full h-full shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1.01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                    </a>
-                  </div>
+            {/* Admin Alert Message Display */}
+            {settings.adminAlertMessage && (
+              <div className="bg-indigo-600 p-6 rounded-[2.25rem] shadow-xl text-white relative overflow-hidden animate-pulse">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+                <div className="flex items-center space-x-3 mb-2">
+                  <span className="text-xl">📢</span>
+                  <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-80">विशेष सूचना</p>
                 </div>
-              ))}
+                <p className="text-sm font-bold leading-relaxed">{settings.adminAlertMessage}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {showResults ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">परिणाम ({filteredList.length})</h3>
+              {selectedVillageId && (
+                <button 
+                  onClick={() => setSelectedVillageId('')} 
+                  className="text-[10px] font-black text-indigo-600 uppercase"
+                >
+                  गाँव हटाएँ ✕
+                </button>
+              )}
             </div>
+            
+            {filteredList.map((c) => (
+              <div key={c.id} className="bg-white p-5 rounded-[2.25rem] border border-gray-50 flex items-center shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xl mr-5 shrink-0">
+                  {c.name ? c.name.charAt(0) : '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-slate-800 text-base truncate">{c.name}</h4>
+                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">पिता: {c.fatherName}</p>
+                  <p className="text-indigo-600 font-bold text-sm mt-1">{c.mobile}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button onClick={() => handleShareContact(c)} className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                  </button>
+                  <a href={`tel:${c.mobile}`} className="w-14 h-14 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-xl shadow-indigo-100 active:scale-90 transition-all">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1.01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="space-y-8 animate-fade-in flex flex-col items-center justify-center py-20 opacity-30 text-center">
-             <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center mb-6">
-                <span className="text-4xl">📖</span>
+          <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in opacity-40">
+             <div className="w-40 h-40 bg-white rounded-[3rem] shadow-sm flex items-center justify-center mb-6 border border-indigo-50">
+                <span className="text-6xl">📖</span>
              </div>
-             <div>
-               <p className="text-[11px] font-heavy-custom text-indigo-900 uppercase tracking-widest leading-loose">
-                 यादव समाज वागड़ चौरासी <br/> डिजिटल मोबाइल डायरी
-               </p>
-               <p className="text-[9px] font-light-custom text-slate-500 mt-2 uppercase tracking-widest max-w-[220px]">
-                 कृपया अपना गाँव चुनें या सदस्य का नाम लिखकर खोजें।
-               </p>
-             </div>
+             <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tight">डिजिटल मोबाइल डायरी</h2>
+             <p className="text-[10px] font-bold text-gray-400 mt-2 max-w-[200px] mx-auto uppercase tracking-widest text-center">गाँव चुनें या खोजें</p>
           </div>
         )}
       </main>
+
+      <footer className="bg-white/50 backdrop-blur-md p-10 text-center border-t border-slate-100 mt-auto">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">{UI_STRINGS.copyright}</p>
+        <div className="flex justify-center space-x-2">
+          <a href={`https://${UI_STRINGS.footerLink}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-bold text-[10px] uppercase tracking-widest bg-indigo-50 px-4 py-2 rounded-full">
+            {UI_STRINGS.footerLink}
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };

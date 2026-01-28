@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Village, Contact, AppSettings } from '../types';
 import { 
@@ -7,10 +7,54 @@ import {
   addToCloud, 
   updateInCloud, 
   deleteFromCloud,
-  uploadFileToStorage 
+  uploadFileToStorage,
+  db
 } from '../services/firebase';
+import { ref, remove } from 'firebase/database';
 import { exportContactsToExcel, parseContactsFromExcel } from '../utils/exportUtils';
-import { updateServiceSettings } from '../services/geminiService';
+
+// Helper Components
+const StatsCard: React.FC<{ label: string; count: number; icon: string; color: string }> = ({ label, count, icon, color }) => (
+  <div className="card-premium p-6 flex items-center space-x-4">
+    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${color}`}>
+      {icon}
+    </div>
+    <div>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+      <h4 className="text-2xl font-bold text-gray-900 tracking-tight">{count}</h4>
+    </div>
+  </div>
+);
+
+const SidebarItem: React.FC<{ path: string; label: string; icon: string; active: boolean }> = ({ path, label, icon, active }) => (
+  <Link 
+    to={`/admin${path}`} 
+    className={`flex items-center space-x-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all ${
+      active ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-white hover:shadow-sm'
+    }`}
+  >
+    <span className="text-xl">{icon}</span>
+    <span>{label}</span>
+  </Link>
+);
+
+const UploadBox: React.FC<{ id: string; label: string; value?: string; onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void; onRemove: () => void; progress?: string }> = ({ id, label, value, onUpload, onRemove, progress }) => (
+  <div className="p-6 bg-white rounded-[2rem] border border-gray-100 shadow-sm flex items-center space-x-6">
+    <div className="w-20 h-20 bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden flex items-center justify-center">
+      {value ? <img src={value} className="w-full h-full object-cover" alt="Branding" /> : <div className="text-[10px] text-gray-300 font-bold uppercase">No Image</div>}
+    </div>
+    <div className="flex-1">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{label}</p>
+      <div className="flex items-center space-x-4">
+        <label htmlFor={id} className="px-5 py-2.5 bg-black text-white rounded-xl font-bold text-[11px] uppercase cursor-pointer shadow-md">
+          {progress || 'Upload Image'}
+        </label>
+        <input id={id} type="file" onChange={onUpload} className="hidden" />
+        {value && <button onClick={onRemove} className="text-[11px] text-rose-500 font-bold uppercase hover:underline">Remove</button>}
+      </div>
+    </div>
+  </div>
+);
 
 interface AdminProps {
   villages: Village[];
@@ -25,93 +69,24 @@ interface AdminProps {
 const Admin: React.FC<AdminProps> = (props) => {
   const location = useLocation();
   const navigate = useNavigate();
-  
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [imgUploadProgress, setImgUploadProgress] = useState<{ [key: string]: string }>({});
-
-  // Form States
+  
   const [vName, setVName] = useState('');
   const [vTehsil, setVTehsil] = useState('');
   const [vDistrict, setVDistrict] = useState('Dungarpur');
   const [mSearch, setMSearch] = useState('');
 
-  useEffect(() => {
-    updateServiceSettings(props.settings);
-  }, [props.settings]);
-
-  const SidebarItem = ({ path, label, icon }: any) => {
-    const isActive = location.pathname === `/admin${path}`;
-    return (
-      <Link 
-        to={`/admin${path}`} 
-        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-heavy-custom text-[10px] transition-all duration-300 ${isActive ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
-      >
-        <span className="text-base">{icon}</span>
-        <span>{label}</span>
-      </Link>
-    );
-  };
-
   const handleSaveSettings = async () => {
     setLoading(true);
     try {
       await saveSettingsToCloud(props.settings);
-      alert("सेटिंग्स और API कुंजियाँ क्लाउड पर सुरक्षित कर दी गई हैं! ✅");
+      alert("सेटिंग्स और सूचना क्लाउड पर सुरक्षित कर दी गई हैं! ✅");
     } catch (e) {
       alert("त्रुटि! डेटाबेस से संपर्क नहीं हो पाया।");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setLoading(true);
-    setUploadStatus('0%');
-    try {
-      const rows = await parseContactsFromExcel(file);
-      if (!rows || rows.length === 0) {
-        alert("Excel फाइल खाली है।");
-        setLoading(false);
-        return;
-      }
-
-      let successCount = 0;
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const percent = Math.round(((i + 1) / rows.length) * 100);
-        setUploadStatus(`${percent}%`);
-        
-        const villageName = row['गाँव'] || row['village'] || row['Village'] || row['सदस्य का गाँव'];
-        const name = row['नाम'] || row['name'] || row['Name'] || row['सदस्य का नाम'];
-        const mobile = row['मोबाइल'] || row['mobile'] || row['Mobile'] || row['मोबाइल नंबर'];
-        const father = row['पिता का नाम'] || row['father'] || row['Father Name'] || 'अज्ञात';
-        
-        const village = props.villages.find(v => v.name === String(villageName).trim());
-        
-        if (village && name && mobile) {
-           await addToCloud('contacts', {
-              name: String(name),
-              fatherName: String(father),
-              mobile: String(mobile).replace(/\D/g, '').slice(-10),
-              villageId: village.id,
-              isActive: true,
-              isDeleted: false,
-              dynamicValues: {}
-           });
-           successCount++;
-        }
-      }
-      alert(`${successCount} सदस्य सफलतापूर्वक इम्पोर्ट किए गए।`);
-    } catch (err) {
-      alert("Excel अपलोड में त्रुटि हुई।");
-    } finally {
-      setLoading(false);
-      setUploadStatus('');
-      if (e.target) e.target.value = '';
     }
   };
 
@@ -129,109 +104,156 @@ const Admin: React.FC<AdminProps> = (props) => {
         order: props.villages.length + 1
       });
       setVName(''); setVTehsil('');
+      alert("गाँव सफलतापूर्वक जोड़ा गया!");
     } catch (err) { alert("गाँव जोड़ने में त्रुटि"); }
     finally { setLoading(false); }
   };
 
   const handleDeleteVillage = async (id: string) => {
+    if (!id) return;
     if (window.confirm("क्या आप वाकई इस गाँव को हटाना चाहते हैं?")) {
-      await updateInCloud('villages', id, { isDeleted: true });
+      try {
+        await deleteFromCloud('villages', id);
+      } catch (e) {
+        console.error("Village delete failed:", e);
+      }
     }
   };
 
   const handleDeleteMember = async (id: string) => {
-    if (window.confirm("क्या आप इस सदस्य को हटाना चाहते हैं?")) {
-      await updateInCloud('contacts', id, { isDeleted: true });
+    if (!id) return;
+    if (window.confirm("क्या आप इस सदस्य को स्थायी रूप से हटाना चाहते हैं? यह डेटाबेस से तुरंत हट जाएगा।")) {
+      setLoading(true);
+      try {
+        const memberRef = ref(db, `contacts/${id}`);
+        await remove(memberRef);
+      } catch (e) {
+        alert("त्रुटि! डेटाबेस से संपर्क नहीं हो पाया।");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    setUploadStatus('प्रगति: 0%');
+    try {
+      const rows = await parseContactsFromExcel(file);
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const percent = Math.round(((i + 1) / rows.length) * 100);
+        setUploadStatus(`प्रगति: ${percent}%`);
+        
+        const villageName = row['गाँव'] || row['village'] || row['Village'] || row['सदस्य का गाँव'];
+        const name = row['नाम'] || row['name'] || row['Name'] || row['सदस्य का नाम'];
+        const mobile = row['मोबाइल'] || row['mobile'] || row['Mobile'] || row['मोबाइल नंबर'];
+        const father = row['पिता का नाम'] || row['father'] || row['Father Name'] || 'अज्ञात';
+        
+        const village = props.villages.find(v => v.name.trim() === String(villageName || '').trim());
+        
+        if (village && name && mobile) {
+           await addToCloud('contacts', {
+              name: String(name),
+              fatherName: String(father),
+              mobile: String(mobile).replace(/\D/g, '').slice(-10),
+              villageId: village.id,
+              isActive: true,
+              isDeleted: false,
+              dynamicValues: {}
+           });
+        }
+      }
+      alert("Excel डेटा सफलतापूर्वक अपलोड हुआ! ✅");
+    } catch (err) { 
+      alert("Excel इम्पोर्ट में त्रुटि!"); 
+    } finally { 
+      setLoading(false); 
+      setUploadStatus(''); 
+      if(e.target) e.target.value = ''; 
     }
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50/30 p-2 md:p-4 gap-4">
-      <aside className="w-full md:w-48 space-y-2 shrink-0 flex flex-col">
-        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-2">
-           <h1 className="text-xs font-heavy-custom text-slate-800 uppercase tracking-tighter leading-tight">यादव समाज<br/>वागड़ चौरासी</h1>
-           <p className="text-[7px] font-light-custom text-indigo-400 uppercase tracking-[0.2em] mt-1">v1.1.0 - CONTROL</p>
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#F9FAFB] p-4 md:p-8 gap-8">
+      <aside className="w-full md:w-72 space-y-4 shrink-0 flex flex-col">
+        <div className="bg-black p-8 rounded-[2rem] text-white shadow-xl mb-4 relative overflow-hidden">
+           <h1 className="text-xl font-bold uppercase tracking-tight">Admin Panel</h1>
+           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-indigo-100 mt-2 opacity-60">Control Center</p>
         </div>
         
-        <nav className="space-y-1 flex-1">
-          <SidebarItem path="" label="डैशबोर्ड" icon="⚡" />
-          <SidebarItem path="/villages" label="गाँव सूची" icon="🏘️" />
-          <SidebarItem path="/members" label="सदस्य" icon="👥" />
-          <SidebarItem path="/settings" label="API एवं ब्रांडिंग" icon="🎨" />
+        <nav className="space-y-2 flex-1">
+          <SidebarItem path="" label="Dashboard" icon="📊" active={location.pathname === '/admin'} />
+          <SidebarItem path="/villages" label="गाँव सूची" icon="🏘️" active={location.pathname === '/admin/villages'} />
+          <SidebarItem path="/members" label="सदस्य प्रबंधन" icon="👥" active={location.pathname === '/admin/members'} />
+          <SidebarItem path="/settings" label="AI एवं ब्रांडिंग" icon="⚙️" active={location.pathname === '/admin/settings'} />
         </nav>
 
-        <div className="pt-4 space-y-1 border-t border-slate-200 mt-4">
-          <button onClick={() => navigate('/')} className="flex items-center space-x-2 px-4 py-3 text-slate-500 font-light-custom text-[8px] uppercase tracking-widest hover:text-indigo-600 transition-all w-full text-left bg-white rounded-xl mb-1 shadow-sm border border-slate-50">
-            <span>🏠</span>
-            <span>Exit to Home</span>
-          </button>
-          <button onClick={() => { props.onLogout(); navigate('/'); }} className="flex items-center space-x-2 px-4 py-3 text-rose-600 font-heavy-custom text-[8px] uppercase tracking-widest hover:bg-rose-50 transition-all w-full text-left bg-white rounded-xl shadow-sm border border-rose-100">
-            <span>🔴</span>
-            <span>Logout Panel</span>
+        <div className="pt-6 space-y-2">
+          <button onClick={() => navigate('/')} className="w-full flex items-center space-x-4 px-6 py-4 text-gray-500 font-bold text-sm bg-white rounded-2xl shadow-sm border border-gray-100 transition-all hover:bg-slate-50">
+             <span>🏠</span>
+             <span>Exit</span>
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 space-y-4 max-w-5xl">
+      <main className="flex-1 space-y-8 max-w-7xl">
         <Routes>
           <Route path="/" element={
-            <div className="space-y-4 animate-fade-in">
-              <div className="grid grid-cols-3 gap-2">
-                 <StatsCard label="गाँव" count={props.villages.filter(v=>!v.isDeleted).length} icon="🏘️" color="indigo" />
-                 <StatsCard label="सदस्य" count={props.contacts.filter(c=>!c.isDeleted).length} icon="👥" color="purple" />
-                 <StatsCard label="सक्रिय" count={props.contacts.filter(c=>!c.isDeleted && c.isActive).length} icon="✨" color="amber" />
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <StatsCard label="कुल गाँव" count={props.villages.filter(v=>!v.isDeleted).length} icon="🏘️" color="bg-indigo-50 text-indigo-600" />
+                 <StatsCard label="कुल सदस्य" count={props.contacts.filter(c=>!c.isDeleted).length} icon="👥" color="bg-purple-50 text-purple-600" />
+                 <StatsCard label="सक्रिय सदस्य" count={props.contacts.filter(c=>!c.isDeleted && c.isActive).length} icon="✨" color="bg-emerald-50 text-emerald-600" />
               </div>
-              
-              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                <h3 className="text-[9px] font-heavy-custom text-slate-800 mb-4 flex items-center space-x-2 uppercase tracking-widest">त्वरित कार्यवाही</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  <QuickAction title="प्रिंट PDF" sub="Full Sync" icon="🖨️" bg="bg-indigo-600" onClick={() => window.print()} />
-                  <QuickAction title="Excel Backup" sub="Download" icon="📥" bg="bg-emerald-600" onClick={() => exportContactsToExcel(props.contacts, props.villages)} />
-                  <div className="relative">
-                    <input type="file" id="bulk-upload-input" className="hidden" accept=".xlsx, .xls" onChange={handleExcelImport} />
-                    <QuickAction 
-                      title={loading && uploadStatus ? uploadStatus : "Excel Import"} 
-                      sub={loading ? "अपलोड हो रहा है..." : "बल्क डेटा"} 
-                      icon={loading ? "⌛" : "📤"} 
-                      bg={loading ? "bg-amber-500" : "bg-slate-800"} 
-                      onClick={() => !loading && document.getElementById('bulk-upload-input')?.click()} 
-                    />
-                  </div>
-                </div>
+              <div className="card-premium p-10 bg-white">
+                 <h3 className="text-sm font-bold text-gray-800 mb-8 uppercase tracking-widest text-center md:text-left">त्वरित कार्यवाही (Bulk Operations)</h3>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <button onClick={() => exportContactsToExcel(props.contacts, props.villages)} className="p-8 bg-emerald-600 text-white rounded-[2rem] font-bold flex flex-col items-center justify-center space-y-3 active:scale-95 transition-all shadow-xl shadow-emerald-100">
+                      <span className="text-3xl">📤</span>
+                      <p className="text-[12px] uppercase tracking-[0.2em]">Excel Export</p>
+                    </button>
+                    
+                    <label className="p-8 bg-indigo-600 text-white rounded-[2rem] font-bold flex flex-col items-center justify-center space-y-3 active:scale-95 transition-all shadow-xl shadow-indigo-100 cursor-pointer relative overflow-hidden">
+                      <span className="text-3xl">📥</span>
+                      <p className="text-[12px] uppercase tracking-[0.2em]">{uploadStatus || 'Excel Import'}</p>
+                      <input type="file" accept=".xlsx, .xls" onChange={handleExcelImport} className="hidden" disabled={loading} />
+                      {loading && <div className="absolute inset-0 bg-black/20 animate-pulse"></div>}
+                    </label>
+
+                    <button onClick={() => navigate('/register')} className="p-8 bg-slate-900 text-white rounded-[2rem] font-bold flex flex-col items-center justify-center space-y-3 active:scale-95 transition-all shadow-xl">
+                      <span className="text-3xl">✨</span>
+                      <p className="text-[12px] uppercase tracking-[0.2em]">Add New Member</p>
+                    </button>
+                 </div>
               </div>
             </div>
           } />
 
           <Route path="/villages" element={
-            <div className="space-y-4 animate-fade-in">
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h3 className="text-xs font-heavy-custom text-slate-800 mb-4 uppercase tracking-widest">नया गाँव जोड़ें</h3>
-                <form onSubmit={handleAddVillage} className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <input placeholder="गाँव का नाम" className="p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-indigo-100 text-xs font-bold" value={vName} onChange={e=>setVName(e.target.value)} />
-                  <input placeholder="तहसील" className="p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-indigo-100 text-xs font-bold" value={vTehsil} onChange={e=>setVTehsil(e.target.value)} />
-                  <select className="p-3 bg-slate-50 rounded-xl text-xs font-bold" value={vDistrict} onChange={e=>setVDistrict(e.target.value)}>
-                    <option value="Dungarpur">डूंगरपुर</option>
-                    <option value="Banswara">बांसवाड़ा</option>
-                  </select>
-                  <button type="submit" disabled={loading} className="bg-indigo-600 text-white font-heavy-custom rounded-xl text-[9px] uppercase tracking-widest p-3">गाँव जोड़ें +</button>
+            <div className="space-y-6">
+              <div className="card-premium p-8 bg-white">
+                <h3 className="text-sm font-bold text-gray-800 mb-6 uppercase tracking-widest">नया गाँव जोड़ें</h3>
+                <form onSubmit={handleAddVillage} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <input placeholder="गाँव का नाम" className="p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold" value={vName} onChange={e=>setVName(e.target.value)} />
+                  <input placeholder="तहसील" className="p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold" value={vTehsil} onChange={e=>setVTehsil(e.target.value)} />
+                  <button type="submit" disabled={loading} className="bg-black text-white font-bold rounded-2xl text-xs uppercase p-4 shadow-lg active:scale-95">जोड़ें +</button>
                 </form>
               </div>
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="card-premium overflow-hidden bg-white">
                 <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-[8px] font-heavy-custom text-slate-400 uppercase tracking-widest">
-                    <tr>
-                      <th className="px-6 py-4">गाँव का नाम</th>
-                      <th className="px-6 py-4">तहसील</th>
-                      <th className="px-6 py-4 text-right">कार्यवाही</th>
-                    </tr>
+                  <thead className="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <tr><th className="px-8 py-5">गाँव</th><th className="px-8 py-5">तहसील</th><th className="px-8 py-5 text-right">कार्यवाही</th></tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-gray-50">
                     {props.villages.filter(v=>!v.isDeleted).map(v => (
-                      <tr key={v.id} className="text-xs font-bold text-slate-700">
-                        <td className="px-6 py-4">{v.name}</td>
-                        <td className="px-6 py-4">{v.tehsil}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button onClick={()=>handleDeleteVillage(v.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg">हटाएँ</button>
+                      <tr key={v.id} className="text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                        <td className="px-8 py-5">{v.name}</td>
+                        <td className="px-8 py-5">{v.tehsil}</td>
+                        <td className="px-8 py-5 text-right">
+                          <button onClick={()=>handleDeleteVillage(v.id)} className="bg-rose-50 text-rose-600 px-4 py-2 rounded-xl font-bold text-[10px] uppercase hover:bg-rose-100 active:scale-90 transition-all">हटाएँ</button>
                         </td>
                       </tr>
                     ))}
@@ -242,33 +264,45 @@ const Admin: React.FC<AdminProps> = (props) => {
           } />
 
           <Route path="/members" element={
-            <div className="space-y-4 animate-fade-in">
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center px-6">
-                <span className="text-slate-400 mr-4">🔍</span>
-                <input placeholder="सदस्य खोजें (नाम या मोबाइल)..." className="flex-1 outline-none text-sm font-bold bg-transparent" value={mSearch} onChange={e=>setMSearch(e.target.value)} />
+            <div className="space-y-6">
+              <div className="card-premium p-6 px-8 flex items-center bg-white shadow-sm border border-gray-100">
+                <span className="mr-4 text-xl">🔍</span>
+                <input 
+                  placeholder="नाम या मोबाइल से खोजें..." 
+                  className="flex-1 outline-none text-base font-bold bg-transparent" 
+                  value={mSearch} 
+                  onChange={e=>setMSearch(e.target.value)} 
+                />
               </div>
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
-                <table className="w-full text-left min-w-[600px]">
-                  <thead className="bg-slate-50 text-[8px] font-heavy-custom text-slate-400 uppercase tracking-widest">
+              <div className="card-premium overflow-x-auto bg-white shadow-xl">
+                <table className="w-full text-left min-w-[800px]">
+                  <thead className="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     <tr>
-                      <th className="px-6 py-4">नाम</th>
-                      <th className="px-6 py-4">पिता</th>
-                      <th className="px-6 py-4">मोबाइल</th>
-                      <th className="px-6 py-4">गाँव</th>
-                      <th className="px-6 py-4 text-right">कार्यवाही</th>
+                      <th className="px-8 py-5">नाम</th>
+                      <th className="px-8 py-5">पिता/पति</th>
+                      <th className="px-8 py-5">मोबाइल</th>
+                      <th className="px-8 py-5 text-right">प्रबंधन</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {props.contacts.filter(c=>!c.isDeleted && (c.name.toLowerCase().includes(mSearch.toLowerCase()) || c.mobile.includes(mSearch))).slice(0, 100).map(c => (
-                      <tr key={c.id} className="text-xs font-bold text-slate-700">
-                        <td className="px-6 py-4">{c.name}</td>
-                        <td className="px-6 py-4">{c.fatherName}</td>
-                        <td className="px-6 py-4">{c.mobile}</td>
-                        <td className="px-6 py-4 text-indigo-600">{props.villages.find(v=>v.id===c.villageId)?.name}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button onClick={()=>handleDeleteMember(c.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg">हटाएँ</button>
-                        </td>
-                      </tr>
+                  <tbody className="divide-y divide-gray-50">
+                    {props.contacts
+                      .filter(c=>!c.isDeleted && (c.name.toLowerCase().includes(mSearch.toLowerCase()) || c.mobile.includes(mSearch)))
+                      .slice(0, 150)
+                      .map(c => (
+                        <tr key={c.id} className="text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                          <td className="px-8 py-5 whitespace-nowrap">{c.name}</td>
+                          <td className="px-8 py-5 text-gray-500 whitespace-nowrap">{c.fatherName}</td>
+                          <td className="px-8 py-5 font-mono text-indigo-600">{c.mobile}</td>
+                          <td className="px-8 py-5 text-right">
+                            <button 
+                              onClick={() => handleDeleteMember(c.id)} 
+                              className="bg-rose-600 text-white px-5 py-2 rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-rose-100 active:scale-90 transition-all"
+                              disabled={loading}
+                            >
+                              Delete Now
+                            </button>
+                          </td>
+                        </tr>
                     ))}
                   </tbody>
                 </table>
@@ -277,48 +311,44 @@ const Admin: React.FC<AdminProps> = (props) => {
           } />
 
           <Route path="/settings" element={
-            <div className="space-y-4 animate-fade-in pb-8">
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-                <h3 className="text-[10px] font-heavy-custom text-slate-800 flex items-center space-x-2 uppercase tracking-widest">
-                  <span className="bg-indigo-50 p-1 rounded-lg text-sm">🤖</span>
-                  <span>AI API Configurations (Saved to Firebase)</span>
-                </h3>
+            <div className="space-y-8 pb-12">
+              <div className="card-premium p-10 bg-indigo-600 text-white relative overflow-hidden">
+                <h3 className="text-sm font-bold text-white mb-8 uppercase tracking-widest">सामाजिक सूचना (Admin Message)</h3>
                 <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Gemini AI Key (Primary)</label>
-                    <input type="password" placeholder="AIzaSy..." className="w-full p-4 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-indigo-100 text-xs font-bold font-mono" value={props.settings.aiKeyPrimary} onChange={e=>props.setSettings({...props.settings, aiKeyPrimary: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Groq API Key (Secondary/Fallback)</label>
-                    <input type="password" placeholder="gsk_..." className="w-full p-4 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-indigo-100 text-xs font-bold font-mono" value={props.settings.aiKeySecondary} onChange={e=>props.setSettings({...props.settings, aiKeySecondary: e.target.value})} />
-                  </div>
+                  <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest">होम पेज पर दिखने वाली सूचना</p>
+                  <textarea 
+                    className="w-full p-5 bg-white/10 rounded-2xl border border-white/20 text-sm font-bold text-white outline-none focus:bg-white/20 transition-all"
+                    placeholder="जैसे: कल समाज की बैठक साकोदरा में है..."
+                    value={props.settings.adminAlertMessage || ''}
+                    onChange={e => props.setSettings({...props.settings, adminAlertMessage: e.target.value})}
+                  />
+                  <p className="text-[9px] text-white/40 italic">सूचना खाली छोड़ने पर होम पेज से बॉक्स गायब हो जाएगा।</p>
                 </div>
-
-                <div className="h-px bg-slate-100 my-6"></div>
-
-                <h3 className="text-[10px] font-heavy-custom text-slate-800 flex items-center space-x-2 uppercase tracking-widest">
-                  <span className="bg-indigo-50 p-1 rounded-lg text-sm">🎨</span>
-                  <span>ब्रांडिंग सेटिंग्स</span>
-                </h3>
-                <UploadBox 
-                  id="admin-bg-upload" 
-                  label="ऐप बैकग्राउंड इमेज" 
-                  value={props.settings.backgroundImageUrl} 
-                  onUpload={(e: any) => {
-                    const file = e.target.files?.[0];
-                    if(file) uploadFileToStorage(file, 'branding', p=>setImgUploadProgress({bg: `${p}%`})).then(url=>props.setSettings({...props.settings, backgroundImageUrl: url}));
-                  }} 
-                  progress={imgUploadProgress['bg']}
-                  onRemove={() => props.setSettings({...props.settings, backgroundImageUrl: ''})} 
-                />
               </div>
 
-              <button 
-                onClick={handleSaveSettings} 
-                disabled={loading}
-                className="w-full text-white font-heavy-custom py-5 rounded-xl shadow-lg transition-all text-[10px] uppercase tracking-[0.3em] bg-indigo-600 hover:bg-indigo-700"
-              >
-                {loading ? 'सुरक्षित हो रहा है...' : 'Brand & API Settings सुरक्षित करें 🚀'}
+              <div className="card-premium p-10 bg-black text-white relative overflow-hidden">
+                <h3 className="text-sm font-bold text-white mb-8 uppercase tracking-widest">Core AI Config</h3>
+                <div className="space-y-6">
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Groq Cloud API Key</label>
+                     <input type="password" placeholder="Enter Groq Key..." className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 text-sm font-bold text-white outline-none" value={props.settings.groqApiKey || ''} onChange={e => props.setSettings({...props.settings, groqApiKey: e.target.value})} />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">System Master Prompt</label>
+                      <textarea className="w-full p-5 bg-white/5 rounded-[2rem] border border-white/10 text-xs font-medium text-white min-h-[140px] outline-none" value={props.settings.aiSystemPrompt || ''} onChange={e => props.setSettings({...props.settings, aiSystemPrompt: e.target.value})} />
+                   </div>
+                </div>
+              </div>
+
+              <div className="card-premium p-10 bg-white">
+                <h3 className="text-sm font-bold text-gray-800 mb-8 uppercase tracking-widest">App Branding</h3>
+                <UploadBox id="bg-up" label="Background Image" value={props.settings.backgroundImageUrl} onUpload={(e) => {
+                  const file = e.target.files?.[0];
+                  if(file) uploadFileToStorage(file, 'branding', p => setImgUploadProgress({bg: `${p}%`})).then(url => props.setSettings({...props.settings, backgroundImageUrl: url}));
+                }} progress={imgUploadProgress['bg']} onRemove={() => props.setSettings({...props.settings, backgroundImageUrl: ''})} />
+              </div>
+              <button onClick={handleSaveSettings} disabled={loading} className="w-full bg-black text-white font-bold py-6 rounded-3xl text-[11px] uppercase tracking-[0.3em] active:scale-95 transition-all shadow-2xl">
+                Save All Changes 🚀
               </button>
             </div>
           } />
@@ -327,37 +357,5 @@ const Admin: React.FC<AdminProps> = (props) => {
     </div>
   );
 };
-
-const StatsCard = ({ label, count, icon, color }: any) => {
-  const themes: any = { indigo: 'bg-indigo-50 text-indigo-600', purple: 'bg-purple-50 text-purple-600', amber: 'bg-amber-50 text-amber-600' };
-  return (
-    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center space-x-2">
-       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base ${themes[color]}`}>{icon}</div>
-       <div><p className="text-[7px] font-light-custom text-slate-400 uppercase tracking-widest leading-none mb-0.5">{label}</p><h4 className="text-lg font-heavy-custom text-slate-800 tracking-tighter leading-none">{count}</h4></div>
-    </div>
-  );
-};
-
-const QuickAction = ({ title, sub, icon, bg, onClick }: any) => (
-  <button onClick={onClick} className={`w-full p-3 ${bg} text-white rounded-xl font-heavy-custom flex flex-col items-center justify-center space-y-1 hover:opacity-95 transition-all active:scale-95 shadow-sm`}>
-    <span className="text-lg">{icon}</span><div className="text-center"><p className="text-[9px] leading-tight">{title}</p><p className="text-[6px] uppercase tracking-widest opacity-60 font-light-custom">{sub}</p></div>
-  </button>
-);
-
-const UploadBox = ({ id, label, value, onUpload, onRemove, progress }: any) => (
-  <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center space-x-3">
-    <div className="w-14 h-14 bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 flex items-center justify-center">
-      {value ? <img src={value} className="w-full h-full object-cover" alt="P" /> : <div className="text-[6px] text-slate-300 text-center">NO IMAGE</div>}
-    </div>
-    <div className="flex-1">
-      <p className="text-[8px] font-light-custom text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-      <div className="flex items-center space-x-2">
-        <label htmlFor={id} className="px-3 py-1 bg-indigo-600 text-white font-heavy-custom text-[7px] uppercase tracking-widest rounded cursor-pointer">{progress || 'चुनें'}</label>
-        <input id={id} type="file" onChange={onUpload} className="hidden" />
-        {value && <button onClick={onRemove} className="text-[7px] text-rose-500 uppercase font-bold">हटाएँ</button>}
-      </div>
-    </div>
-  </div>
-);
 
 export default Admin;

@@ -7,7 +7,9 @@ import {
   push, 
   set, 
   update, 
-  remove
+  remove,
+  query,
+  limitToLast
 } from "firebase/database";
 import { 
   getStorage, 
@@ -36,7 +38,6 @@ export { db, storage };
 
 /**
  * Uploads a file to Firebase Storage and returns the download URL.
- * Provides a callback for progress tracking.
  */
 export const uploadFileToStorage = (
   file: File, 
@@ -89,6 +90,25 @@ export const syncCollection = (path: string, callback: (data: any[]) => void, on
       message: error.message,
       isNetworkError: true
     });
+  });
+};
+
+/**
+ * Sync only the last N items for performance (e.g., logs).
+ */
+export const syncRecentLogs = (path: string, count: number, callback: (data: any[]) => void) => {
+  const dbRef = query(ref(db, path), limitToLast(count));
+  return onValue(dbRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      const list = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+      })).reverse();
+      callback(list);
+    } else {
+      callback([]);
+    }
   });
 };
 

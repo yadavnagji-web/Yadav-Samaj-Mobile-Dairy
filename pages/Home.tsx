@@ -31,7 +31,6 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
       setThought(AMBEDKAR_THOUGHTS[day % AMBEDKAR_THOUGHTS.length]);
     }
 
-    // PWA Install Prompt Listener
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -56,23 +55,19 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        // The appinstalled event will trigger the success message
-      }
+      if (outcome === 'accepted') setDeferredPrompt(null);
     } else {
-      // Check if already in standalone mode
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
       if (isStandalone) {
-        alert("यह ऐप पहले से ही आपके मोबाइल में इंस्टॉल है! आप इसे होम स्क्रीन से खोल सकते हैं।");
+        alert("यह ऐप पहले से ही आपके मोबाइल में इंस्टॉल है!");
       } else {
-        alert("आपका ब्राउज़र डायरेक्ट इंस्टॉलेशन सपोर्ट नहीं करता। कृपया ब्राउज़र मेनू में 'Add to Home Screen' विकल्प चुनें।");
+        alert("कृपया ब्राउज़र मेनू में 'Add to Home Screen' चुनें।");
       }
     }
   };
 
   const handleShareApp = () => {
-    const shareText = `*${UI_STRINGS.appName}*\n\nयादव समाज की अपनी डिजिटल डायरी अपने मोबाइल में इंस्टॉल करें और समाज से जुड़ें।\n\nयहाँ क्लिक करें: ${window.location.origin}`;
+    const shareText = `*${UI_STRINGS.appName}*\n\nसमाज की डिजिटल डायरी इंस्टॉल करें: ${window.location.origin}`;
     if (navigator.share) {
       navigator.share({ title: UI_STRINGS.appName, text: shareText, url: window.location.origin });
     } else {
@@ -97,7 +92,7 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
 
   const handleShareContact = (contact: Contact) => {
     const villageName = villages.find(v => v.id === contact.villageId)?.name || 'अज्ञात';
-    const shareText = `*${UI_STRINGS.appName}*\n\n👤 नाम: ${contact.name}\n👵 पिता/पति: ${contact.fatherName}\n📞 मोबाइल: ${contact.mobile}\n🏘️ गाँव: ${villageName}`;
+    const shareText = `*${UI_STRINGS.appName}*\n\n👤 नाम: ${contact.name}\n📞 मोबाइल: ${contact.mobile}\n🏘️ गाँव: ${villageName}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
@@ -114,12 +109,11 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
         contacts={contacts} 
       />
 
-      {/* Success Toast */}
       {installSuccess && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10000] w-[90%] max-w-sm animate-bounce">
-          <div className="bg-emerald-600 text-white p-5 rounded-[2rem] shadow-2xl flex items-center space-x-4 border-2 border-white">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10000] w-[90%] max-w-sm">
+          <div className="bg-emerald-600 text-white p-5 rounded-[2rem] shadow-2xl flex items-center space-x-4 border-2 border-white animate-bounce">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">✅</div>
-            <p className="text-xs font-bold leading-tight">बधाई हो! 'BHIM Diary' ऐप सफलतापूर्वक इंस्टॉल हो गया है। अब आप इसे होम स्क्रीन से चला सकते हैं।</p>
+            <p className="text-xs font-bold leading-tight">बधाई हो! ऐप सफलतापूर्वक इंस्टॉल हो गया है।</p>
           </div>
         </div>
       )}
@@ -134,6 +128,10 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
             <p className="text-[9px] text-indigo-100 font-medium uppercase tracking-[0.2em] mt-1 opacity-90">{UI_STRINGS.tagline}</p>
           </div>
           <div className="flex items-center space-x-2">
+            {/* Direct Help Button */}
+            <button onClick={() => navigate('/help')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white mr-1">
+              <span className="text-lg">💡</span>
+            </button>
             <button onClick={handleShareApp} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
             </button>
@@ -162,7 +160,7 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
                value={selectedVillageId} 
                onChange={(e) => setSelectedVillageId(e.target.value)}
              >
-               <option value="">— अपना गाँव चुनें —</option>
+               <option value="">— गाँव चुनें —</option>
                {villages && villages.filter(v => !v.isDeleted).sort((a,b)=>a.name.localeCompare(b.name,'hi')).map(v => (
                  <option key={v.id} value={v.id}>{v.name}</option>
                ))}
@@ -175,7 +173,7 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
             onClick={handleInstallApp} 
             className="px-5 bg-black text-white rounded-2xl font-bold text-[10px] uppercase shadow-lg active:scale-95 transition-all"
           >
-            Install App
+            Install
           </button>
         </div>
 
@@ -199,28 +197,11 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
                     <span className="text-[11px] font-bold text-gray-800">{panchangInfo.vaar}</span>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
-                    <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">माह</p>
-                    <p className="text-[10px] font-bold text-gray-800">{panchangInfo.mahina}</p>
-                  </div>
-                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
-                    <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">पक्ष</p>
-                    <p className="text-[10px] font-bold text-gray-800">{panchangInfo.paksh}</p>
-                  </div>
-                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
-                    <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">तिथि</p>
-                    <p className="text-[10px] font-bold text-gray-800">{panchangInfo.tithi}</p>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* Admin Alert Message Display */}
             {settings.adminAlertMessage && (
-              <div className="bg-indigo-600 p-6 rounded-[2.25rem] shadow-xl text-white relative overflow-hidden animate-pulse">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+              <div className="bg-indigo-600 p-6 rounded-[2.25rem] shadow-xl text-white relative overflow-hidden">
                 <div className="flex items-center space-x-3 mb-2">
                   <span className="text-xl">📢</span>
                   <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-80">विशेष सूचना</p>
@@ -233,18 +214,6 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
 
         {showResults ? (
           <div className="space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between px-2 mb-2">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">परिणाम ({filteredList.length})</h3>
-              {selectedVillageId && (
-                <button 
-                  onClick={() => setSelectedVillageId('')} 
-                  className="text-[10px] font-black text-indigo-600 uppercase"
-                >
-                  गाँव हटाएँ ✕
-                </button>
-              )}
-            </div>
-            
             {filteredList.map((c) => (
               <div key={c.id} className="bg-white p-5 rounded-[2.25rem] border border-gray-50 flex items-center shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xl mr-5 shrink-0">
@@ -267,12 +236,12 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in opacity-40">
-             <div className="w-40 h-40 bg-white rounded-[3rem] shadow-sm flex items-center justify-center mb-6 border border-indigo-50">
-                <span className="text-6xl">📖</span>
+          <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+             <div className="w-32 h-32 bg-white rounded-[2.5rem] shadow-sm flex items-center justify-center mb-6 border border-indigo-50">
+                <span className="text-5xl">📖</span>
              </div>
-             <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tight">डिजिटल मोबाइल डायरी</h2>
-             <p className="text-[10px] font-bold text-gray-400 mt-2 max-w-[200px] mx-auto uppercase tracking-widest text-center">गाँव चुनें या खोजें</p>
+             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-tight">डिजिटल मोबाइल डायरी</h2>
+             <p className="text-[9px] font-bold text-gray-400 mt-2 max-w-[200px] mx-auto uppercase tracking-widest text-center">गाँव चुनें या खोजें</p>
           </div>
         )}
       </main>

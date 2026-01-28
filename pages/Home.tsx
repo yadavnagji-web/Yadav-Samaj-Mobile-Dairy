@@ -55,21 +55,32 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') setDeferredPrompt(null);
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
     } else {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
       if (isStandalone) {
         alert("यह ऐप पहले से ही आपके मोबाइल में इंस्टॉल है!");
       } else {
-        alert("कृपया ब्राउज़र मेनू में 'Add to Home Screen' चुनें।");
+        alert("कृपया ब्राउज़र मेनू में 'Add to Home Screen' या 'होम स्क्रीन पर जोड़ें' विकल्प चुनें।");
       }
     }
   };
 
   const handleShareApp = () => {
-    const shareText = `*${UI_STRINGS.appName}*\n\nसमाज की डिजिटल डायरी इंस्टॉल करें: ${window.location.origin}`;
+    const shareUrl = window.location.origin + window.location.pathname + window.location.search;
+    const shareText = `*${UI_STRINGS.appName}*\n\nयादव समाज की अपनी डिजिटल डायरी अपने मोबाइल में इंस्टॉल करें और समाज से जुड़ें।\n\nयहाँ क्लिक करें: ${shareUrl}`;
+    
     if (navigator.share) {
-      navigator.share({ title: UI_STRINGS.appName, text: shareText, url: window.location.origin });
+      navigator.share({
+        title: UI_STRINGS.appName,
+        text: shareText,
+        url: shareUrl
+      }).catch(() => {
+        // Fallback to WhatsApp
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+      });
     } else {
       window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
     }
@@ -128,7 +139,6 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
             <p className="text-[9px] text-indigo-100 font-medium uppercase tracking-[0.2em] mt-1 opacity-90">{UI_STRINGS.tagline}</p>
           </div>
           <div className="flex items-center space-x-2">
-            {/* Direct Help Button */}
             <button onClick={() => navigate('/help')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white mr-1">
               <span className="text-lg">💡</span>
             </button>
@@ -196,6 +206,21 @@ const Home: React.FC<HomeProps> = ({ villages = [], contacts = [], settings, use
                     <span className="text-[7px] font-black text-gray-300 uppercase tracking-widest block mb-1">वार</span>
                     <span className="text-[11px] font-bold text-gray-800">{panchangInfo.vaar}</span>
                   </div>
+                </div>
+                {/* Restored 3-column Panchang Info */}
+                <div className="grid grid-cols-3 gap-2">
+                   <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                      <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">माह</p>
+                      <p className="text-[10px] font-bold text-gray-800">{panchangInfo.mahina}</p>
+                   </div>
+                   <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                      <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">पक्ष</p>
+                      <p className="text-[10px] font-bold text-gray-800">{panchangInfo.paksh}</p>
+                   </div>
+                   <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-center">
+                      <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-1">तिथि</p>
+                      <p className="text-[10px] font-bold text-gray-800">{panchangInfo.tithi}</p>
+                   </div>
                 </div>
               </div>
             )}
